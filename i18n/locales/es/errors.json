@@ -1,0 +1,10 @@
+{
+  "AUTH_001": "Se requiere un encabezado de autorización con token Bearer.",
+  "AUTH_002": "Token de autenticación inválido.",
+  "VAL_001": "Se requieren mcp_server_id y prompt_id.",
+  "VAL_002": "Servidor MCP no encontrado.",
+  "VAL_003": "Prompt no encontrado.",
+  "SRV_001": "Error al obtener recomendaciones financieras.",
+  "SRV_002": "Error al procesar la solicitud.",
+  "SRV_003": "Error al conectar con el servidor MCP."
+}

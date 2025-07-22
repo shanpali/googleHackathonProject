@@ -1,0 +1,10 @@
+{
+  "AUTH_001": "Authorization header with Bearer token is required.",
+  "AUTH_002": "Invalid authentication token.",
+  "VAL_001": "mcp_server_id and prompt_id are required.",
+  "VAL_002": "MCP server not found.",
+  "VAL_003": "Prompt not found.",
+  "SRV_001": "Failed to get financial recommendations.",
+  "SRV_002": "Failed to process request.",
+  "SRV_003": "Failed to connect to MCP server."
+}

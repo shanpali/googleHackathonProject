@@ -1,5 +1,128 @@
 {
-  "financial_analysis": "As a financial advisor, analyze this data: {financial_data}. Provide actionable recommendations.",
-  "investment_suggestions": "Based on the following financial data, suggest suitable investment options: {financial_data}.",
-  "debt_reduction_plan": "Create a debt reduction plan for a user with this financial profile: {financial_data}."
+  "financial_analysis": {
+    "template": "As a financial advisor, analyze this data: {financial_data}. Provide actionable recommendations for improving financial health. Focus on {focus_area} if specified. Please respond in {response_language}.",
+    "variables": {
+      "financial_data": {
+        "type": "object",
+        "required": true,
+        "description": "User's financial data including income, expenses, debts, and assets"
+      },
+      "focus_area": {
+        "type": "string",
+        "required": false,
+        "default": "general financial health",
+        "description": "Specific area to focus on (e.g., 'savings', 'debt reduction', 'investments')"
+      },
+      "response_language": {
+        "type": "string",
+        "required": false,
+        "default": "English",
+        "description": "Language for the response"
+      }
+    },
+    "category": "financial_planning",
+    "description": "Comprehensive financial analysis and recommendations",
+    "max_tokens": 1000,
+    "localized_instructions": {
+      "en": "Provide clear, actionable advice",
+      "es": "Proporciona consejos claros y accionables", 
+      "fr": "Fournir des conseils clairs et exploitables"
+    }
+  },
+  "investment_suggestions": {
+    "template": "Based on the following financial data, suggest suitable investment options: {financial_data}. Consider the user's risk tolerance of {risk_tolerance} and investment timeline of {timeline}. Please respond in {response_language} with clear explanations.",
+    "variables": {
+      "financial_data": {
+        "type": "object",
+        "required": true,
+        "description": "User's financial data"
+      },
+      "risk_tolerance": {
+        "type": "string",
+        "required": false,
+        "default": "moderate",
+        "options": ["conservative", "moderate", "aggressive"],
+        "description": "User's risk tolerance level"
+      },
+      "timeline": {
+        "type": "string",
+        "required": false,
+        "default": "5 years",
+        "description": "Investment timeline"
+      },
+      "response_language": {
+        "type": "string",
+        "required": false,
+        "default": "English",
+        "description": "Language for the response"
+      }
+    },
+    "category": "investments",
+    "description": "Personalized investment recommendations",
+    "max_tokens": 1200
+  },
+  "debt_reduction_plan": {
+    "template": "Create a comprehensive debt reduction plan for a user with this financial profile: {financial_data}. Use the {strategy} approach and aim for completion in {target_timeframe}. Please respond in {response_language} with a step-by-step plan.",
+    "variables": {
+      "financial_data": {
+        "type": "object",
+        "required": true,
+        "description": "User's financial data including debts"
+      },
+      "strategy": {
+        "type": "string",
+        "required": false,
+        "default": "debt avalanche",
+        "options": ["debt avalanche", "debt snowball", "hybrid"],
+        "description": "Debt reduction strategy to use"
+      },
+      "target_timeframe": {
+        "type": "string",
+        "required": false,
+        "default": "3 years",
+        "description": "Target timeframe for debt elimination"
+      },
+      "response_language": {
+        "type": "string",
+        "required": false,
+        "default": "English",
+        "description": "Language for the response"
+      }
+    },
+    "category": "debt_management",
+    "description": "Strategic debt reduction planning",
+    "max_tokens": 1500
+  },
+  "budget_optimization": {
+    "template": "Analyze the budget data: {financial_data} and create an optimized budget plan. Focus on {optimization_goal} and consider the user's lifestyle preferences: {lifestyle_preferences}. Please respond in {response_language}.",
+    "variables": {
+      "financial_data": {
+        "type": "object",
+        "required": true,
+        "description": "User's income and expense data"
+      },
+      "optimization_goal": {
+        "type": "string",
+        "required": false,
+        "default": "maximize savings",
+        "options": ["maximize savings", "reduce expenses", "increase emergency fund", "improve cash flow"],
+        "description": "Primary optimization objective"
+      },
+      "lifestyle_preferences": {
+        "type": "string",
+        "required": false,
+        "default": "balanced lifestyle",
+        "description": "User's lifestyle preferences and constraints"
+      },
+      "response_language": {
+        "type": "string",
+        "required": false,
+        "default": "English",
+        "description": "Language for the response"
+      }
+    },
+    "category": "budgeting",
+    "description": "Budget optimization and expense management",
+    "max_tokens": 1000
+  }
 }

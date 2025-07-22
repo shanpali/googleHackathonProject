@@ -1,7 +1,26 @@
 [
   {
-    "id": "fi_money_mcp",
-    "name": "Fi Money MCP",
-    "url": "http://localhost:3000/api/user/recommendations"
+    "id": "financial_data_service",
+    "name": "Financial Data Service", 
+    "description": "Provides user financial data including income, expenses, debts, assets",
+    "function": "fi_money_mcp.get_financial_data",
+    "capabilities": ["financial_analysis", "budget_planning", "debt_management", "investment_planning"],
+    "status": "active"
+  },
+  {
+    "id": "market_data_service",
+    "name": "Market Data Service",
+    "description": "Real-time market data, stock prices, economic indicators",
+    "function": "market_mcp.get_market_data", 
+    "capabilities": ["investment_analysis", "portfolio_optimization", "market_research"],
+    "status": "planned"
+  },
+  {
+    "id": "tax_service",
+    "name": "Tax Planning Service",
+    "description": "Tax calculations, deductions, filing assistance",
+    "function": "tax_mcp.get_tax_data",
+    "capabilities": ["tax_planning", "deduction_optimization", "filing_assistance"], 
+    "status": "planned"
   }
 ]

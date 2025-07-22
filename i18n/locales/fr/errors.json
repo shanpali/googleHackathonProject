@@ -1,0 +1,10 @@
+{
+  "AUTH_001": "En-tête d'autorisation avec jeton Bearer requis.",
+  "AUTH_002": "Jeton d'authentification invalide.",
+  "VAL_001": "mcp_server_id et prompt_id sont requis.",
+  "VAL_002": "Serveur MCP introuvable.",
+  "VAL_003": "Prompt introuvable.",
+  "SRV_001": "Échec de l'obtention des recommandations financières.",
+  "SRV_002": "Échec du traitement de la demande.",
+  "SRV_003": "Échec de la connexion au serveur MCP."
+}
