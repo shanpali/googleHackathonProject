@@ -1,0 +1,5 @@
+{
+  "financial_analysis": "As a financial advisor, analyze this data: {financial_data}. Provide actionable recommendations.",
+  "investment_suggestions": "Based on the following financial data, suggest suitable investment options: {financial_data}.",
+  "debt_reduction_plan": "Create a debt reduction plan for a user with this financial profile: {financial_data}."
+}

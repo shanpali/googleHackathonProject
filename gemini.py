@@ -1,22 +1,40 @@
-import os
-import requests
-import json
+import google.generativeai as genai
+import logging
+from config import GEMINI_API_KEY, GEMINI_MODEL
 
-def get_gemini_recommendations(financial_data):
-    prompt = f"As a financial advisor, analyze this data: {json.dumps(financial_data)}. Provide actionable recommendations."
-    chat_history = [{"role": "user", "parts": [{"text": prompt}]}]
-    payload = {"contents": chat_history}
-    api_key = os.environ.get("GEMINI_API_KEY")
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+# Configure the generative AI model
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel(GEMINI_MODEL)
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_gemini_recommendations(financial_data, prompt_template):
+    """
+    Generates financial recommendations using the Gemini API.
+
+    Args:
+        financial_data (dict): A dictionary containing the user's financial data.
+        prompt_template (str): The prompt template to use for the generation.
+
+    Returns:
+        str: The generated recommendations, or a graceful error message.
+    """
     try:
-        response = requests.post(api_url, json=payload)
-        result = response.json()
-        if 'candidates' in result and len(result['candidates']) > 0 and 'content' in result['candidates'][0] and 'parts' in result['candidates'][0]['content'] and len(result['candidates'][0]['content']['parts']) > 0:
-            return result['candidates'][0]['content']['parts'][0]['text']
-        else:
-            print("Gemini API response structure unexpected:", result)
-            return "Could not generate recommendations."
+        # Create the full prompt
+        prompt = prompt_template.format(financial_data=financial_data)
+
+        # Generate content
+        response = model.generate_content(prompt)
+
+        # Log the response for debugging (masking PII is crucial here)
+        # In a real application, you would implement a robust PII masking solution.
+        logger.info(f"Gemini API response: {response.text}")
+
+        return response.text
     except Exception as e:
-        print(f"Error calling Gemini API: {e}")
-        return "Error generating recommendations."
+        logger.error(f"Error calling Gemini API: {e}", exc_info=True)
+        # Depending on the context, you might want to return a more user-friendly
+        # message on the UI.
+        return "An error occurred while generating recommendations. Please try again later."

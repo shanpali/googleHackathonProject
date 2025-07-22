@@ -1,0 +1,7 @@
+[
+  {
+    "id": "fi_money_mcp",
+    "name": "Fi Money MCP",
+    "url": "http://localhost:3000/api/user/recommendations"
+  }
+]
