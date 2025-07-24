@@ -1,0 +1,18 @@
+[
+  {
+    "id": "alert_001",
+    "type": "price_target",
+    "asset_symbol": "AAPL",
+    "condition": "price above 200",
+    "message": "Apple stock has reached target price",
+    "status": "active"
+  },
+  {
+    "id": "alert_002",
+    "type": "portfolio_rebalance",
+    "asset_symbol": "Portfolio",
+    "condition": "portfolio weight deviation > 10%",
+    "message": "Portfolio needs rebalancing",
+    "status": "active"
+  }
+]
