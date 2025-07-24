@@ -3,13 +3,27 @@ from flask_cors import CORS
 import requests
 import os
 import json
+from config import Config
+from gemini_service import get_gemini_service
+from function_implementations import (
+    schedule_reminder,
+    generate_financial_report,
+    set_financial_goal,
+    create_investment_alert
+)
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = Config.FLASK_SECRET_KEY
 CORS(app, supports_credentials=True)
 
-# Removed: FI_MCP_URL and all Go server related code
-GEMINI_API_URL = 'https://gemini.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyCI43NmQ0bhy_IxU1Y3vv1pLc8KPUvXHKk'
+# Initialize Gemini service
+gemini_service = get_gemini_service()
+
+# Register function implementations
+gemini_service.register_function("schedule_reminder", schedule_reminder)
+gemini_service.register_function("generate_financial_report", generate_financial_report)
+gemini_service.register_function("set_financial_goal", set_financial_goal)
+gemini_service.register_function("create_investment_alert", create_investment_alert)
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TEST_DATA_DIR = os.path.join(BASE_DIR, 'test_data_dir')
@@ -68,15 +82,24 @@ def recommendations():
                     user_data[endpoint] = json.load(f)
             else:
                 user_data[endpoint] = None
-        except Exception as e:
+        except Exception:
             user_data[endpoint] = None
 
-    # Call Gemini API
-    gemini_payload = {
-        "contents": [{"parts": [{"text": f"Give recommendations for: {user_data}"}]}]
-    }
-    gemini_resp = requests.post(GEMINI_API_URL, json=gemini_payload)
-    return jsonify(gemini_resp.json())
+    # Use the new Gemini service for recommendations
+    try:
+        response = gemini_service.generate_recommendations(
+            user_data=user_data,
+            phone=phone,  # Pass phone for context loading
+            focus_areas=["investment_optimization", "risk_assessment", "financial_planning"]
+        )
+        
+        return jsonify({
+            "recommendations": response.get('text', 'Unable to generate recommendations'),
+            "function_calls": response.get('function_calls', []),
+            "success": not response.get('error')
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate recommendations: {str(e)}'}), 500
 
 @app.route('/chatbot', methods=['POST'])
 def chatbot():
@@ -99,29 +122,52 @@ def chatbot():
                     user_data[endpoint] = json.load(f)
             else:
                 user_data[endpoint] = None
-        except Exception as e:
+        except Exception:
             user_data[endpoint] = None
 
     # Maintain conversation history in session
     if 'chat_history' not in session:
         session['chat_history'] = []
     chat_history = session['chat_history']
+    
     # Add the new user message
     chat_history.append({'role': 'user', 'text': user_message})
 
-    # Compose prompt for Gemini with context retention and prefix
-    prefix = "Act as a financial advisor or wealth manager while looking into given data."
-    history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['text']}" for msg in chat_history])
-    prompt = f"{prefix}\nUser financial data: {user_data}\n{history_text}"
-    gemini_payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-    gemini_resp = requests.post(GEMINI_API_URL, json=gemini_payload)
-    # Add Gemini's response to history
-    gemini_text = gemini_resp.json().get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', str(gemini_resp.json()))
-    chat_history.append({'role': 'assistant', 'text': gemini_text})
-    session['chat_history'] = chat_history
-    return jsonify({"response": gemini_text, "history": chat_history})
+    # Use the new Gemini service with enhanced context
+    try:
+        # Create enhanced user content with chat history
+        history_context = ""
+        if len(chat_history) > 1:  # If there's previous conversation
+            recent_history = chat_history[-5:]  # Last 5 messages
+            history_context = "Previous conversation:\n" + "\n".join([
+                f"{msg['role'].capitalize()}: {msg['text']}" 
+                for msg in recent_history[:-1]  # Exclude the current message
+            ]) + "\n\nCurrent question: "
+        
+        full_user_content = history_context + user_message
+        
+        response = gemini_service.generate_content_with_user_context(
+            user_content=full_user_content,
+            phone=phone,  # Pass phone for context loading
+            financial_data=user_data,
+            include_tools=True
+        )
+        
+        assistant_response = response.get('text', 'I apologize, but I encountered an error processing your request.')
+        
+        # Add Gemini's response to history
+        chat_history.append({'role': 'assistant', 'text': assistant_response})
+        session['chat_history'] = chat_history
+        
+        return jsonify({
+            "response": assistant_response,
+            "function_calls": response.get('function_calls', []),
+            "history": chat_history,
+            "success": not response.get('error')
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Chat processing failed: {str(e)}'}), 500
 
 @app.route('/mcp/<filename>')
 def serve_mock_data(filename):
@@ -137,4 +183,4 @@ def serve_mock_data(filename):
     return send_from_directory(user_dir, f"{filename}.json")
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True) 
+    app.run(port=Config.FLASK_PORT, debug=Config.FLASK_DEBUG) 

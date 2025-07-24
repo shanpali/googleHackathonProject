@@ -1,0 +1,29 @@
+[
+  {
+    "id": "rem_001",
+    "title": "Pay credit card bill",
+    "description": "Monthly credit card payment due",
+    "date": "2025-07-29",
+    "time": "09:00",
+    "category": "payment",
+    "status": "scheduled"
+  },
+  {
+    "id": "rem_002",
+    "title": "Review investment portfolio",
+    "description": "Monthly portfolio review and rebalancing",
+    "date": "2025-08-08",
+    "time": "10:00",
+    "category": "investment",
+    "status": "scheduled"
+  },
+  {
+    "id": "rem_003",
+    "title": "Old reminder",
+    "description": "This should be filtered out",
+    "date": "2025-07-14",
+    "time": "14:00",
+    "category": "other",
+    "status": "scheduled"
+  }
+]

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Start the Fi-mcp Go server
-cd "$(dirname "$0")"
-echo "Starting Fi-mcp server on port 8080..."
-FI_MCP_PORT=8080 go run . &
-GO_PID=$!
+#cd "$(dirname "$0")"
+#echo "Starting Fi-mcp server on port 8080..."
+#FI_MCP_PORT=8080 go run . &
+#GO_PID=$!
 
 # Start the Flask backend
 cd flask-backend
