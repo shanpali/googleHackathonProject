@@ -1,41 +1,38 @@
-# User Guide: Fi-mcp Demo Project
+# User Guide: ArthaSetu AI Mock Financial Dashboard
 
-This guide explains how to set up, configure, and use the Fi-mcp demo project, which provides a full-stack mock financial dashboard with recommendations.
+This guide explains how to set up, configure, and use the ArthaSetu AI mock financial dashboard project, which provides a full-stack mock financial dashboard with recommendations.
 
 ---
 
 ## Overview
 
-This project consists of three main components:
+This project consists of two main components:
 
-1. **Fi-mcp Go Server** (mock backend, Go)
-2. **Flask Backend** (API aggregator and Gemini integration, Python)
-3. **React Frontend** (user dashboard, JavaScript)
+1. **Flask Backend** (serves all mock data and APIs, Python)
+2. **React Frontend** (user dashboard, JavaScript)
 
-All components are orchestrated via a single `run.sh` script for easy startup.
+All components are orchestrated via simple startup scripts for easy startup.
 
 ---
 
 ## Directory Structure
 
 ```
-fi-mcp-dev-master/
+fi-mcp-project/
 ├── flask-backend/         # Flask backend (Python)
 │   ├── app.py
 │   └── requirements.txt
 ├── react-frontend/        # React frontend (JavaScript)
 │   ├── package.json
 │   └── src/
-├── test_data_dir/         # Dummy data for Fi-mcp Go server
-├── run.sh                 # Startup script
-└── ...                    # Go server files (main.go, etc.)
+├── test_data_dir/         # Dummy data for Flask backend
+└── ...                    # Other files
 ```
 
 ---
 
 ## Prerequisites
 
-- **Go** (v1.23 or later)
 - **Python 3** (for Flask backend)
 - **Node.js & npm** (for React frontend)
 
@@ -46,26 +43,24 @@ fi-mcp-dev-master/
 1. **Clone the repository** (if not already done):
    ```bash
    git clone <repo-url>
-   cd fi-mcp-dev-master
+   cd fi-mcp-project
    ```
 
-2. **Replace Gemini API Key**
-   - Open `flask-backend/app.py`
-   - Find the line:
-     ```python
-     GEMINI_API_URL = 'https://gemini.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_GEMINI_API_KEY'
-     ```
-   - Replace `YOUR_GEMINI_API_KEY` with your actual Gemini API key.
-
-3. **Start all servers**
+2. **Install and start Flask backend**
    ```bash
-   chmod +x run.sh
-   ./run.sh
+   cd flask-backend
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   python app.py
    ```
-   This will:
-   - Start the Go mock server on port 8080
-   - Start the Flask backend on port 5000
-   - Start the React frontend on port 3000
+
+3. **Start React frontend**
+   ```bash
+   cd ../react-frontend
+   npm install
+   npm start
+   ```
 
 4. **Access the Dashboard**
    - Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -77,8 +72,7 @@ fi-mcp-dev-master/
 
 | Component         | Technology   | Purpose                                              |
 |-------------------|-------------|------------------------------------------------------|
-| Go Server         | Go          | Mock Fi-mcp API, serves dummy financial data          |
-| Flask Backend     | Python/Flask| Aggregates data, integrates with Gemini for AI advice |
+| Flask Backend     | Python/Flask| Serves all mock data and Gemini APIs advice                       |
 | React Frontend    | React/JS    | User dashboard, charts, and recommendations UI        |
 
 ---
@@ -91,7 +85,7 @@ fi-mcp-dev-master/
   - Add new sections to the React dashboard as needed.
 
 - **Change Ports:**
-  - Edit `run.sh` and the relevant server files if you need to use different ports.
+  - Edit the startup scripts and the relevant server files if you need to use different ports.
 
 ---
 
@@ -99,7 +93,7 @@ fi-mcp-dev-master/
 
 - If a server fails to start, check for missing dependencies and install them as prompted.
 - If you see CORS errors, ensure all servers are running and ports are correct.
-- To stop all servers, use the `kill` command with the process IDs printed by `run.sh`.
+- To stop all servers, use your terminal to kill the running processes.
 
 ---
 
