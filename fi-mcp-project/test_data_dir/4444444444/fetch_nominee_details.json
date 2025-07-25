@@ -1,0 +1,129 @@
+{
+  "nomineeDetails": {
+    "primaryNominee": {
+      "name": "Anjali Patel",
+      "relationship": "Spouse",
+      "age": 28,
+      "contact": "+91 87654 32109",
+      "email": "anjali.patel@email.com",
+      "address": "Bangalore, Karnataka",
+      "percentage": 100,
+      "status": "active",
+      "documents": {
+        "panCard": "FGHIJ1234K",
+        "aadharCard": "5678-9012-3456",
+        "passport": "B9876543"
+      }
+    },
+    "secondaryNominees": [
+      {
+        "name": "Rohan Patel",
+        "relationship": "Son",
+        "age": 3,
+        "contact": "N/A",
+        "email": "N/A",
+        "address": "Bangalore, Karnataka",
+        "percentage": 100,
+        "status": "active",
+        "documents": {
+          "aadharCard": "6789-0123-4567",
+          "birthCertificate": "BC345678"
+        }
+      }
+    ],
+    "insuranceCoverage": {
+      "lifeInsurance": {
+        "totalCoverage": 3000000,
+        "policies": [
+          {
+            "policyNumber": "LIC987654321",
+            "insurer": "LIC",
+            "coverage": 2000000,
+            "premium": 20000,
+            "maturityDate": "2038-03-15",
+            "nominee": "Anjali Patel"
+          },
+          {
+            "policyNumber": "ICICI987654321",
+            "insurer": "ICICI Prudential",
+            "coverage": 1000000,
+            "premium": 12000,
+            "maturityDate": "2035-12-10",
+            "nominee": "Anjali Patel"
+          }
+        ]
+      },
+      "healthInsurance": {
+        "totalCoverage": 800000,
+        "policies": [
+          {
+            "policyNumber": "CIGNA987654321",
+            "insurer": "CIGNA",
+            "coverage": 800000,
+            "premium": 6000,
+            "validity": "2025-12-31",
+            "nominee": "Anjali Patel"
+          }
+        ]
+      },
+      "accidentalCoverage": {
+        "totalCoverage": 1500000,
+        "policies": [
+          {
+            "policyNumber": "MAX987654321",
+            "insurer": "Max Bupa",
+            "coverage": 1500000,
+            "premium": 4000,
+            "validity": "2025-12-31",
+            "nominee": "Anjali Patel"
+          }
+        ]
+      }
+    },
+    "assetWiseNominees": {
+      "mutualFunds": {
+        "primaryNominee": "Anjali Patel",
+        "secondaryNominees": ["Rohan Patel"],
+        "distribution": {
+          "Anjali Patel": 80,
+          "Rohan Patel": 20
+        }
+      },
+      "stocks": {
+        "primaryNominee": "Anjali Patel",
+        "secondaryNominees": ["Rohan Patel"],
+        "distribution": {
+          "Anjali Patel": 80,
+          "Rohan Patel": 20
+        }
+      },
+      "epf": {
+        "primaryNominee": "Anjali Patel",
+        "secondaryNominees": ["Rohan Patel"],
+        "distribution": {
+          "Anjali Patel": 100
+        }
+      },
+      "bankAccounts": {
+        "primaryNominee": "Anjali Patel",
+        "secondaryNominees": ["Rohan Patel"],
+        "distribution": {
+          "Anjali Patel": 100
+        }
+      }
+    },
+    "riskAssessment": {
+      "coverageRatio": 23.1,
+      "nomineeCompleteness": 75,
+      "documentationStatus": 80,
+      "overallRisk": "Medium",
+      "recommendations": [
+        "Increase life insurance coverage significantly",
+        "Complete nominee documentation for all accounts",
+        "Consider adding health insurance for family",
+        "Review asset distribution strategy"
+      ]
+    },
+    "lastUpdated": "2025-01-15T10:30:00Z"
+  }
+} 

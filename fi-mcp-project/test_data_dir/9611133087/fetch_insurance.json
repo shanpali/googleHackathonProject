@@ -1,0 +1,57 @@
+{
+  "lifeInsurance": {
+    "totalCoverage": 5000000,
+    "policies": [
+      {
+        "policyNumber": "LIC123456789",
+        "insurer": "LIC",
+        "coverage": 3000000,
+        "premium": 25000,
+        "maturityDate": "2040-01-15",
+        "nominee": "Priya Sharma"
+      },
+      {
+        "policyNumber": "HDFC123456789",
+        "insurer": "HDFC Life",
+        "coverage": 2000000,
+        "premium": 18000,
+        "maturityDate": "2035-06-20",
+        "nominee": "Priya Sharma"
+      }
+    ]
+  },
+  "healthInsurance": {
+    "totalCoverage": 1000000,
+    "policies": [
+      {
+        "policyNumber": "STAR123456789",
+        "insurer": "Star Health",
+        "coverage": 500000,
+        "premium": 8000,
+        "validity": "2025-12-31",
+        "nominee": "Priya Sharma"
+      },
+      {
+        "policyNumber": "ICICI123456789",
+        "insurer": "ICICI Lombard",
+        "coverage": 500000,
+        "premium": 7000,
+        "validity": "2025-12-31",
+        "nominee": "Priya Sharma"
+      }
+    ]
+  },
+  "accidentalCoverage": {
+    "totalCoverage": 2000000,
+    "policies": [
+      {
+        "policyNumber": "BAJAJ123456789",
+        "insurer": "Bajaj Allianz",
+        "coverage": 2000000,
+        "premium": 5000,
+        "validity": "2025-12-31",
+        "nominee": "Priya Sharma"
+      }
+    ]
+  }
+} 

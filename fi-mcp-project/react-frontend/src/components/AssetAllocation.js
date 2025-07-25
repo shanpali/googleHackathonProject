@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box, Grid, List, ListItem, ListItemText } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+const COLORS = ['#1976d2', '#43a047', '#ffa000', '#d32f2f', '#7b1fa2', '#0288d1', '#fbc02d', '#388e3c'];
 
 export default function AssetAllocation({ data }) {
   // Use real net worth history if available
@@ -35,16 +37,40 @@ export default function AssetAllocation({ data }) {
               </LineChart>
             </ResponsiveContainer>
           </Box>
-          <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 4' }, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 4' }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Typography variant="subtitle2" mb={1}>Allocation Breakdown</Typography>
-            <List dense>
-              {allocationWithPercent.length > 0 ? allocationWithPercent.map((item) => (
-                <ListItem key={item.label} sx={{ py: 0 }}>
-                  <ListItemText primary={item.label} />
-                  <Typography fontWeight={700}>{item.percent}%</Typography>
-                </ListItem>
-              )) : <ListItem><ListItemText primary="No data" /></ListItem>}
-            </List>
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+              <List dense sx={{ flex: 1 }}>
+                {allocationWithPercent.length > 0 ? allocationWithPercent.map((item, idx) => (
+                  <ListItem key={item.label} sx={{ py: 0 }}>
+                    <ListItemText primary={item.label} />
+                    <Typography fontWeight={700}>{item.percent}%</Typography>
+                  </ListItem>
+                )) : <ListItem><ListItemText primary="No data" /></ListItem>}
+              </List>
+              {allocationWithPercent.length > 0 && (
+                <ResponsiveContainer width={120} height={120}>
+                  <PieChart>
+                    <Pie
+                      data={allocationWithPercent}
+                      dataKey="value"
+                      nameKey="label"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={55}
+                      fill="#1976d2"
+                      label={({ name, percent }) => `${Math.round(percent * 100)}%`}
+                      paddingAngle={2}
+                    >
+                      {allocationWithPercent.map((entry, idx) => (
+                        <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
             <Typography variant="body2" color="text.secondary" mt={2}>Risk Profile: <b>Moderate</b></Typography>
           </Box>
         </Grid>

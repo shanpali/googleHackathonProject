@@ -1,0 +1,349 @@
+{
+  "netWorthResponse": {
+    "assetValues": [
+      {
+        "netWorthAttribute": "ASSET_TYPE_MUTUAL_FUND",
+        "value": {
+          "currencyCode": "INR",
+          "units": "450000"
+        }
+      },
+      {
+        "netWorthAttribute": "ASSET_TYPE_EPF",
+        "value": {
+          "currencyCode": "INR",
+          "units": "320000"
+        }
+      },
+      {
+        "netWorthAttribute": "ASSET_TYPE_INDIAN_SECURITIES",
+        "value": {
+          "currencyCode": "INR",
+          "units": "280000"
+        }
+      },
+      {
+        "netWorthAttribute": "ASSET_TYPE_SAVINGS_ACCOUNTS",
+        "value": {
+          "currencyCode": "INR",
+          "units": "850000"
+        }
+      },
+      {
+        "netWorthAttribute": "ASSET_TYPE_US_SECURITIES",
+        "value": {
+          "currencyCode": "INR",
+          "units": "150000"
+        }
+      }
+    ],
+    "liabilityValues": [
+      {
+        "netWorthAttribute": "LIABILITY_TYPE_HOME_LOAN",
+        "value": {
+          "currencyCode": "INR",
+          "units": "250000"
+        }
+      },
+      {
+        "netWorthAttribute": "LIABILITY_TYPE_VEHICLE_LOAN",
+        "value": {
+          "currencyCode": "INR",
+          "units": "80000"
+        }
+      },
+      {
+        "netWorthAttribute": "LIABILITY_TYPE_OTHER_LOAN",
+        "value": {
+          "currencyCode": "INR",
+          "units": "50000"
+        }
+      }
+    ],
+    "totalNetWorthValue": {
+      "currencyCode": "INR",
+      "units": "1720000"
+    }
+  },
+  "accountDetailsBulkResponse": {
+    "accountDetailsMap": {
+      "reit-account-001": {
+        "accountDetails": {
+          "fipId": "fip@nsdl",
+          "maskedAccountNumber": "XXXXXX1234",
+          "accInstrumentType": "ACC_INSTRUMENT_TYPE_REIT",
+          "accountType": {
+            "reitAccountType": "REIT_ACCOUNT_TYPE_DEFAULT_TYPE"
+          },
+          "fipMeta": {
+            "name": "National Securities Depository Limited",
+            "displayName": "NSDL"
+          }
+        },
+        "reitSummary": {
+          "accountId": "reit-account-001",
+          "currentValue": {
+            "currencyCode": "INR",
+            "units": "50000"
+          },
+          "holdingsInfo": [
+            {
+              "isin": "INE0FDU25010",
+              "totalNumberUnits": 100,
+              "isinDescription": "BROOKFIELD INDIA REAL ESTATE TRUST",
+              "nominee": "NOMINEE_TYPE_REGISTERED",
+              "lastClosingRate": {
+                "currencyCode": "INR",
+                "units": "14",
+                "nanos": 550000000
+              }
+            },
+            {
+              "isin": "INE0CCU25019",
+              "totalNumberUnits": 150,
+              "isinDescription": "MINDSPACE BUSINESS PARKS REIT",
+              "nominee": "NOMINEE_TYPE_NOT_REGISTERED",
+              "lastClosingRate": {
+                "currencyCode": "INR",
+                "units": "14",
+                "nanos": 550000000
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "mfSchemeAnalytics": {
+    "schemeAnalytics": [
+      {
+        "schemeDetail": {
+          "amc": "HDFC_MUTUAL_FUND",
+          "nameData": {
+            "longName": "HDFC Mid-Cap Opportunities Fund"
+          },
+          "planType": "DIRECT",
+          "investmentType": "OPEN",
+          "optionType": "GROWTH",
+          "divReinvOptionType": "REINVESTMENT_ONY",
+          "nav": {
+            "currencyCode": "INR",
+            "units": "45",
+            "nanos": 50000000
+          },
+          "assetClass": "EQUITY",
+          "isinNumber": "INF179K01BM2",
+          "categoryName": "MID_CAP_FUNDS",
+          "fundhouseDefinedRiskLevel": "HIGH_RISK"
+        },
+        "enrichedAnalytics": {
+          "analytics": {
+            "schemeDetails": {
+              "currentValue": {
+                "currencyCode": "INR",
+                "units": "250000",
+                "nanos": 0
+              },
+              "investedValue": {
+                "currencyCode": "INR",
+                "units": "200000",
+                "nanos": 0
+              },
+              "XIRR": 18.5,
+              "absoluteReturns": {
+                "currencyCode": "INR",
+                "units": "50000",
+                "nanos": 0
+              },
+              "unrealisedReturns": {
+                "currencyCode": "INR",
+                "units": "50000",
+                "nanos": 0
+              },
+              "navValue": {
+                "currencyCode": "INR",
+                "units": "45",
+                "nanos": 50000000
+              },
+              "units": 5555.56
+            }
+          }
+        }
+      },
+      {
+        "schemeDetail": {
+          "amc": "SBI_MUTUAL_FUND",
+          "nameData": {
+            "longName": "SBI Bluechip Fund"
+          },
+          "planType": "DIRECT",
+          "investmentType": "OPEN",
+          "optionType": "GROWTH",
+          "divReinvOptionType": "REINVESTMENT_ONY",
+          "nav": {
+            "currencyCode": "INR",
+            "units": "65",
+            "nanos": 20000000
+          },
+          "assetClass": "EQUITY",
+          "isinNumber": "INF200K01BM3",
+          "categoryName": "LARGE_CAP_FUNDS",
+          "fundhouseDefinedRiskLevel": "HIGH_RISK"
+        },
+        "enrichedAnalytics": {
+          "analytics": {
+            "schemeDetails": {
+              "currentValue": {
+                "currencyCode": "INR",
+                "units": "200000",
+                "nanos": 0
+              },
+              "investedValue": {
+                "currencyCode": "INR",
+                "units": "180000",
+                "nanos": 0
+              },
+              "XIRR": 12.3,
+              "absoluteReturns": {
+                "currencyCode": "INR",
+                "units": "20000",
+                "nanos": 0
+              },
+              "unrealisedReturns": {
+                "currencyCode": "INR",
+                "units": "20000",
+                "nanos": 0
+              },
+              "navValue": {
+                "currencyCode": "INR",
+                "units": "65",
+                "nanos": 20000000
+              },
+              "units": 3076.92
+            }
+          }
+        }
+      }
+    ]
+  },
+  "accountDetailsBulkResponse": {
+    "accountDetailsMap": {
+      "hdfc-savings-001": {
+        "accountDetails": {
+          "fipId": "HDFC-FIP",
+          "maskedAccountNumber": "XXXXXX1234",
+          "accInstrumentType": "ACC_INSTRUMENT_TYPE_DEPOSIT",
+          "ifscCode": "HDFC0001234",
+          "accountType": {
+            "depositAccountType": "DEPOSIT_ACCOUNT_TYPE_SAVINGS"
+          },
+          "fipMeta": {
+            "name": "HDFC Bank",
+            "displayName": "HDFC",
+            "bank": "HDFC"
+          }
+        },
+        "depositSummary": {
+          "accountId": "hdfc-savings-001",
+          "currentBalance": {
+            "currencyCode": "INR",
+            "units": "450000"
+          },
+          "balanceDate": "2025-01-15T10:30:00Z",
+          "depositAccountType": "DEPOSIT_ACCOUNT_TYPE_SAVINGS",
+          "branch": "Mumbai Main",
+          "ifscCode": "HDFC0001234",
+          "micrCode": "HDFC123456",
+          "openingDate": "2020-03-15T00:00:00Z",
+          "depositAccountStatus": "DEPOSIT_ACCOUNT_STATUS_ACTIVE"
+        }
+      },
+      "icici-savings-001": {
+        "accountDetails": {
+          "fipId": "ICICI-FIP",
+          "maskedAccountNumber": "XXXXXX5678",
+          "accInstrumentType": "ACC_INSTRUMENT_TYPE_DEPOSIT",
+          "ifscCode": "ICIC0005678",
+          "accountType": {
+            "depositAccountType": "DEPOSIT_ACCOUNT_TYPE_SAVINGS"
+          },
+          "fipMeta": {
+            "name": "ICICI Bank",
+            "displayName": "ICICI",
+            "bank": "ICICI"
+          }
+        },
+        "depositSummary": {
+          "accountId": "icici-savings-001",
+          "currentBalance": {
+            "currencyCode": "INR",
+            "units": "400000"
+          },
+          "balanceDate": "2025-01-15T10:30:00Z",
+          "depositAccountType": "DEPOSIT_ACCOUNT_TYPE_SAVINGS",
+          "branch": "Mumbai Central",
+          "ifscCode": "ICIC0005678",
+          "micrCode": "ICIC567890",
+          "openingDate": "2019-07-20T00:00:00Z",
+          "depositAccountStatus": "DEPOSIT_ACCOUNT_STATUS_ACTIVE"
+        }
+      },
+      "kotak-demat-001": {
+        "accountDetails": {
+          "fipId": "fip@nsdl",
+          "maskedAccountNumber": "XXXXXX9012",
+          "accInstrumentType": "ACC_INSTRUMENT_TYPE_EQUITIES",
+          "accountType": {
+            "equityAccountType": "EQUITY_ACCOUNT_TYPE_DEFAULT_TYPE"
+          },
+          "fipMeta": {
+            "name": "National Securities Depository Limited",
+            "displayName": "NSDL"
+          }
+        },
+        "equitySummary": {
+          "accountId": "kotak-demat-001",
+          "currentValue": {
+            "currencyCode": "INR",
+            "units": "280000"
+          },
+          "holdingsInfo": [
+            {
+              "isin": "INE040A01034",
+              "issuerName": "HDFC BANK LIMITED",
+              "type": "EQUITY_HOLDING_TYPE_DEMAT",
+              "units": 100,
+              "lastTradedPrice": {
+                "currencyCode": "INR",
+                "units": "1650"
+              },
+              "isinDescription": "HDFC BANK-EQ1/-"
+            },
+            {
+              "isin": "INE009A01021",
+              "issuerName": "RELIANCE INDUSTRIES LIMITED",
+              "type": "EQUITY_HOLDING_TYPE_DEMAT",
+              "units": 50,
+              "lastTradedPrice": {
+                "currencyCode": "INR",
+                "units": "2300"
+              },
+              "isinDescription": "RELIANCE-EQ1/-"
+            },
+            {
+              "isin": "INE848E01016",
+              "issuerName": "TATA CONSULTANCY SERVICES LIMITED",
+              "type": "EQUITY_HOLDING_TYPE_DEMAT",
+              "units": 75,
+              "lastTradedPrice": {
+                "currencyCode": "INR",
+                "units": "3800"
+              },
+              "isinDescription": "TCS-EQ1/-"
+            }
+          ]
+        }
+      }
+    }
+  }
+} 

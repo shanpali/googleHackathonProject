@@ -4,6 +4,31 @@ This guide explains how to set up, configure, and use the ArthaSetu AI mock fina
 
 ---
 
+## How This Solves the Google Hackathon Challenge
+
+- **Structured Financial Data**: The backend serves user-specific, structured financial data (assets, liabilities, net worth, credit, EPF, and more) in JSON format, just like Fi MCP.
+- **AI-Powered Insights**: Integrates with Gemini (Google AI) to provide personalized, context-aware financial advice and recommendations.
+- **Natural Language Conversations**: Users can chat with the AI agent about their finances, simulate scenarios, and get actionable insights.
+- **User Privacy and Control**: All data is session-based, never leaves the server except for AI processing, and users can export their insights.
+- **Extensible, Modern UI**: The React dashboard visualizes net worth, asset allocation, recent transactions, and more, and can be extended for scenario simulation and anomaly detection.
+- **Google AI Technologies**: Uses Gemini for all AI-powered insights and recommendations.
+
+---
+
+## About the Data (Demo Mode)
+
+**Note:**
+For this hackathon/demo, the backend serves **mock financial data** from `test_data_dir/` instead of connecting to the real Fi MCP server. Each directory in `test_data_dir` represents a different user scenario, allowing us to simulate a wide range of financial profiles and test the AI agent’s capabilities. The architecture is ready to connect to the real Fi MCP server with minimal changes.
+
+---
+
+## New Features
+
+- **Export Insights**: Download your personalized financial insights as a JSON file with one click.
+- **Scenario Simulation**: Ask the chatbot "What if" questions (e.g., "What if I increase my SIP by ₹5,000?") and get AI-powered projections and advice.
+
+---
+
 ## Overview
 
 This project consists of two main components:
@@ -72,7 +97,7 @@ fi-mcp-project/
 
 | Component         | Technology   | Purpose                                              |
 |-------------------|-------------|------------------------------------------------------|
-| Flask Backend     | Python/Flask| Serves all mock data and Gemini APIs advice                       |
+| Flask Backend     | Python/Flask| Serves all mock data and APIs                        |
 | React Frontend    | React/JS    | User dashboard, charts, and recommendations UI        |
 
 ---
@@ -98,9 +123,6 @@ fi-mcp-project/
 ---
 
 ## FAQ
-
-**Q: Where do I put my Gemini API key?**
-A: In `flask-backend/app.py`, replace `YOUR_GEMINI_API_KEY` in the `GEMINI_API_URL` variable.
 
 **Q: What phone numbers can I use to log in?**
 A: Any directory name in `test_data_dir/` is a valid phone number for login.

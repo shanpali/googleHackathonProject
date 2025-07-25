@@ -1,0 +1,153 @@
+{
+  "nomineeDetails": {
+    "primaryNominee": {
+      "name": "Priya Sharma",
+      "relationship": "Spouse",
+      "age": 32,
+      "contact": "+91 98765 43210",
+      "email": "priya.sharma@email.com",
+      "address": "Mumbai, Maharashtra",
+      "percentage": 100,
+      "status": "active",
+      "documents": {
+        "panCard": "ABCDE5678G",
+        "aadharCard": "1234-5678-9012",
+        "passport": "A1234567"
+      }
+    },
+    "secondaryNominees": [
+      {
+        "name": "Arjun Sharma",
+        "relationship": "Son",
+        "age": 8,
+        "contact": "N/A",
+        "email": "N/A",
+        "address": "Mumbai, Maharashtra",
+        "percentage": 50,
+        "status": "active",
+        "documents": {
+          "aadharCard": "2345-6789-0123",
+          "birthCertificate": "BC123456"
+        }
+      },
+      {
+        "name": "Meera Sharma",
+        "relationship": "Daughter",
+        "age": 5,
+        "contact": "N/A",
+        "email": "N/A",
+        "address": "Mumbai, Maharashtra",
+        "percentage": 50,
+        "status": "active",
+        "documents": {
+          "aadharCard": "3456-7890-1234",
+          "birthCertificate": "BC234567"
+        }
+      }
+    ],
+    "insuranceCoverage": {
+      "lifeInsurance": {
+        "totalCoverage": 5000000,
+        "policies": [
+          {
+            "policyNumber": "LIC123456789",
+            "insurer": "LIC",
+            "coverage": 3000000,
+            "premium": 25000,
+            "maturityDate": "2040-01-15",
+            "nominee": "Priya Sharma"
+          },
+          {
+            "policyNumber": "HDFC123456789",
+            "insurer": "HDFC Life",
+            "coverage": 2000000,
+            "premium": 18000,
+            "maturityDate": "2035-06-20",
+            "nominee": "Priya Sharma"
+          }
+        ]
+      },
+      "healthInsurance": {
+        "totalCoverage": 1000000,
+        "policies": [
+          {
+            "policyNumber": "STAR123456789",
+            "insurer": "Star Health",
+            "coverage": 500000,
+            "premium": 8000,
+            "validity": "2025-12-31",
+            "nominee": "Priya Sharma"
+          },
+          {
+            "policyNumber": "ICICI123456789",
+            "insurer": "ICICI Lombard",
+            "coverage": 500000,
+            "premium": 7000,
+            "validity": "2025-12-31",
+            "nominee": "Priya Sharma"
+          }
+        ]
+      },
+      "accidentalCoverage": {
+        "totalCoverage": 2000000,
+        "policies": [
+          {
+            "policyNumber": "BAJAJ123456789",
+            "insurer": "Bajaj Allianz",
+            "coverage": 2000000,
+            "premium": 5000,
+            "validity": "2025-12-31",
+            "nominee": "Priya Sharma"
+          }
+        ]
+      }
+    },
+    "assetWiseNominees": {
+      "mutualFunds": {
+        "primaryNominee": "Priya Sharma",
+        "secondaryNominees": ["Arjun Sharma", "Meera Sharma"],
+        "distribution": {
+          "Priya Sharma": 60,
+          "Arjun Sharma": 20,
+          "Meera Sharma": 20
+        }
+      },
+      "stocks": {
+        "primaryNominee": "Priya Sharma",
+        "secondaryNominees": ["Arjun Sharma", "Meera Sharma"],
+        "distribution": {
+          "Priya Sharma": 60,
+          "Arjun Sharma": 20,
+          "Meera Sharma": 20
+        }
+      },
+      "epf": {
+        "primaryNominee": "Priya Sharma",
+        "secondaryNominees": ["Arjun Sharma", "Meera Sharma"],
+        "distribution": {
+          "Priya Sharma": 100
+        }
+      },
+      "bankAccounts": {
+        "primaryNominee": "Priya Sharma",
+        "secondaryNominees": ["Arjun Sharma", "Meera Sharma"],
+        "distribution": {
+          "Priya Sharma": 100
+        }
+      }
+    },
+    "riskAssessment": {
+      "coverageRatio": 46.5,
+      "nomineeCompleteness": 85,
+      "documentationStatus": 90,
+      "overallRisk": "Low",
+      "recommendations": [
+        "Consider increasing life insurance coverage",
+        "Update nominee details for all accounts",
+        "Review asset distribution percentages",
+        "Maintain emergency fund"
+      ]
+    },
+    "lastUpdated": "2025-01-15T10:30:00Z"
+  }
+} 

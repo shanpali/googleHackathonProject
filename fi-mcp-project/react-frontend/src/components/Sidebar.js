@@ -6,17 +6,21 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import FeedIcon from '@mui/icons-material/Feed';
 
 const menu = [
   { text: 'Dashboard', icon: <DashboardIcon /> },
   { text: 'Portfolio', icon: <AccountBalanceWalletIcon /> },
+  { text: 'Goals', icon: <EmojiEventsIcon /> },
   { text: 'Tax Planning', icon: <ReceiptIcon /> },
   { text: 'Nominee Safeguard', icon: <AssignmentIndIcon /> },
   { text: 'Reports', icon: <AssessmentIcon /> },
   { text: 'Settings', icon: <SettingsIcon /> },
+  { text: 'Personalised News', icon: <FeedIcon /> },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ selectedTab, setSelectedTab }) {
   return (
     <Drawer variant="permanent" sx={{ width: 240, flexShrink: 0, [`& .MuiDrawer-paper`]: { width: 240, boxSizing: 'border-box', bgcolor: '#fff', borderRight: '1px solid #e0e0e0' } }}>
       <Toolbar>
@@ -27,7 +31,13 @@ export default function Sidebar() {
       </Toolbar>
       <List>
         {menu.map((item) => (
-          <ListItem button key={item.text} sx={{ my: 0.5, borderRadius: 2 }}>
+          <ListItem
+            button
+            key={item.text}
+            selected={selectedTab === item.text}
+            onClick={() => setSelectedTab(item.text)}
+            sx={{ my: 0.5, borderRadius: 2, bgcolor: selectedTab === item.text ? '#e3f2fd' : undefined }}
+          >
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
           </ListItem>

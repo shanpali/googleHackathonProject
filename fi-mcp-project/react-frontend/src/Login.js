@@ -11,7 +11,7 @@ function Login({ onLogin }) {
     e.preventDefault();
     try {
       await axios.post('/login', { phone }, { withCredentials: true });
-      onLogin();
+      onLogin(phone);
     } catch (err) {
       setError('Login failed');
       console.error('Login error:', err);

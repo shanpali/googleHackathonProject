@@ -1,0 +1,25 @@
+{
+  "mfTransactions": [
+    {
+      "isin": "INF179K01BM2",
+      "schemeName": "HDFC Mid-Cap Opportunities Fund - Direct Plan Growth",
+      "folioId": "123456789",
+      "txns": [
+        [1, "2023-01-15", 42.50, 2352.94, 100000],
+        [1, "2023-04-15", 43.20, 2314.81, 100000],
+        [1, "2023-07-15", 44.10, 2267.57, 100000]
+      ]
+    },
+    {
+      "isin": "INF200K01BM3",
+      "schemeName": "SBI Bluechip Fund - Direct Plan Growth",
+      "folioId": "987654321",
+      "txns": [
+        [1, "2023-02-10", 58.00, 1724.14, 100000],
+        [1, "2023-05-10", 60.50, 1652.89, 100000],
+        [1, "2023-08-10", 62.00, 1612.90, 100000]
+      ]
+    }
+  ],
+  "schemaDescription": "A list of mutual fund investments. We currently support 500 transactions across all mutual funds(mutual funds with older transactions will be trimmed off, if limit exceeds). Each 'txns' field is a list of data arrays with schema: [ orderType(1 for BUY and 2 for SELL), transactionDate, purchasePrice, purchaseUnits, transactionAmount ]."
+} 
