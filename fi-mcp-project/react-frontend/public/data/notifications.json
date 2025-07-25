@@ -1,0 +1,92 @@
+{
+  "notifications": [
+    {
+      "id": 1,
+      "type": "warning",
+      "title": "Tax Planning Reminder",
+      "message": "Your tax-saving investments are due soon. Consider ELSS funds to maximize your 80C deductions.",
+      "timestamp": "2 hours ago",
+      "read": false,
+      "priority": "high",
+      "actionUrl": "/tax-planning",
+      "category": "Tax Planning"
+    },
+    {
+      "id": 2,
+      "type": "success",
+      "title": "Portfolio Update",
+      "message": "Your mutual fund portfolio gained ₹5,230 this month. Your SIP investments are performing well.",
+      "timestamp": "1 day ago",
+      "read": false,
+      "priority": "medium",
+      "actionUrl": "/portfolio",
+      "category": "Investment"
+    },
+    {
+      "id": 3,
+      "type": "info",
+      "title": "New Feature Available",
+      "message": "Check out our new financial health score feature to better understand your financial wellness.",
+      "timestamp": "3 days ago",
+      "read": true,
+      "priority": "low",
+      "actionUrl": "/dashboard",
+      "category": "Feature"
+    },
+    {
+      "id": 4,
+      "type": "warning",
+      "title": "Nominee Details Missing",
+      "message": "3 of your investments don't have nominee details. Secure your family's financial future.",
+      "timestamp": "5 days ago",
+      "read": false,
+      "priority": "high",
+      "actionUrl": "/nominee-safeguard",
+      "category": "Security"
+    },
+    {
+      "id": 5,
+      "type": "success",
+      "title": "SIP Payment Successful",
+      "message": "Your SIP of ₹5,000 for HDFC Top 100 Fund has been processed successfully.",
+      "timestamp": "1 week ago",
+      "read": true,
+      "priority": "medium",
+      "actionUrl": "/portfolio",
+      "category": "Transaction"
+    },
+    {
+      "id": 6,
+      "type": "info",
+      "title": "Market Update",
+      "message": "Nifty 50 reached a new high. Consider reviewing your equity allocation for better returns.",
+      "timestamp": "1 week ago",
+      "read": true,
+      "priority": "medium",
+      "actionUrl": "/portfolio",
+      "category": "Market"
+    },
+    {
+      "id": 7,
+      "type": "error",
+      "title": "Payment Failed",
+      "message": "Your SIP payment for ₹3,000 failed due to insufficient funds. Please update your bank details.",
+      "timestamp": "2 weeks ago",
+      "read": false,
+      "priority": "high",
+      "actionUrl": "/settings",
+      "category": "Payment"
+    },
+    {
+      "id": 8,
+      "type": "info",
+      "title": "Annual Report Ready",
+      "message": "Your annual investment report for FY 2023-24 is now available for download.",
+      "timestamp": "3 weeks ago",
+      "read": true,
+      "priority": "low",
+      "actionUrl": "/reports",
+      "category": "Report"
+    }
+  ]
+}
