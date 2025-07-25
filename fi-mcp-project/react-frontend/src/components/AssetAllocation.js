@@ -20,11 +20,11 @@ export default function AssetAllocation({ data }) {
     <Card sx={{ borderRadius: 3, mb: 3 }}>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" fontWeight={700}>Asset Allocation</Typography>
-          <Typography variant="body2" color="text.secondary">Last 12 months</Typography>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Asset Allocation</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>Last 12 months</div>
         </Box>
-        <Grid container spacing={2} columns={12} mt={1}>
-          <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 8' }, display: 'flex' }}>
+        <Grid container spacing={2} mt={1}>
+          <Grid item xs={12} md={8}>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={history}>
                 <XAxis dataKey="date" />
@@ -34,19 +34,19 @@ export default function AssetAllocation({ data }) {
                 <Line type="monotone" dataKey="value" stroke="#1976d2" name="Total Portfolio" />
               </LineChart>
             </ResponsiveContainer>
-          </Box>
-          <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 4' }, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle2" mb={1}>Allocation Breakdown</Typography>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '8px' }}>Allocation Breakdown</div>
             <List dense>
               {allocationWithPercent.length > 0 ? allocationWithPercent.map((item) => (
                 <ListItem key={item.label} sx={{ py: 0 }}>
                   <ListItemText primary={item.label} />
-                  <Typography fontWeight={700}>{item.percent}%</Typography>
+                  <div style={{ fontWeight: 700 }}>{item.percent}%</div>
                 </ListItem>
               )) : <ListItem><ListItemText primary="No data" /></ListItem>}
             </List>
-            <Typography variant="body2" color="text.secondary" mt={2}>Risk Profile: <b>Moderate</b></Typography>
-          </Box>
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '16px' }}>Risk Profile: <b>Moderate</b></div>
+          </Grid>
         </Grid>
       </CardContent>
     </Card>

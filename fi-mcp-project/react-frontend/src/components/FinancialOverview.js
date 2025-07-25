@@ -1,12 +1,13 @@
 import React from 'react';
-import { Grid, Card, CardContent, Typography, Box } from '@mui/material';
+import { Grid, Card, CardContent, Box } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SavingsIcon from '@mui/icons-material/Savings';
 import ShieldIcon from '@mui/icons-material/Shield';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import UnifiedFinancialOverview from './UnifiedFinancialOverview';
 
 export default function FinancialOverview({ data }) {
-  // Use real data from props
+  // Extract values from real data
   const netWorth = data.fetch_net_worth?.netWorthResponse?.totalNetWorthValue?.units || '—';
   const investments = data.fetch_net_worth?.netWorthResponse?.assetValues?.find(a => a.netWorthAttribute === 'ASSET_TYPE_MUTUAL_FUND')?.value?.units || '—';
   const savings = data.fetch_bank_transactions?.accounts?.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0) || '—';
@@ -21,25 +22,24 @@ export default function FinancialOverview({ data }) {
   ];
 
   return (
-    <Grid container spacing={2} columns={12}>
-      {cards.map((item, idx) => (
-        <Box key={item.label} sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' }, display: 'flex' }}>
-          <Card sx={{ borderRadius: 3, boxShadow: 0, flex: 1 }}>
+    <Grid container spacing={2} mb={2}>
+      <UnifiedFinancialOverview/>
+      {/* {cards.map((item) => (
+        <Grid item xs={12} sm={6} md={3} key={item.label}>
+          <Card sx={{ borderRadius: 3, boxShadow: 0 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {item.icon}
-                <Typography variant="subtitle2" color="text.secondary">{item.label}</Typography>
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>{item.label}</div>
               </Box>
-              <Typography variant="h6" fontWeight={700}>{item.value}</Typography>
-              {item.change && (
-                <Typography variant="body2" color={item.change.startsWith('+') ? 'green' : 'red'}>
-                  {item.change}
-                </Typography>
-              )}
+              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{item.value}</div>
+              <div style={{ fontSize: '0.875rem', color: item.change.startsWith('+') ? 'green' : 'red' }}>
+                {item.change}
+              </div>
             </CardContent>
           </Card>
-        </Box>
-      ))}
+        </Grid>
+      ))} */}
     </Grid>
   );
 } 
