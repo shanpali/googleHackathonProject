@@ -2,4 +2,5 @@ flask
 requests
 flask-cors
 python-dotenv
-flask_sqlalchemy 
+firebase-admin
+google-cloud-firestore 

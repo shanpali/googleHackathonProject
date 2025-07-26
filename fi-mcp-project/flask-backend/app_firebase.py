@@ -12,8 +12,7 @@ from datetime import datetime, timedelta, timezone
 from firebase_config import initialize_firebase, get_firestore_db, COLLECTIONS
 from firebase_models import (
     FirebaseUserInsights, FirebaseUserGoals, FirebaseUserChatHistory,
-    FirebaseUserHealthScore, FirebaseUserGoalInsights, FirebaseUserProfile,
-    FirebaseUserNews, FirebaseUserCashTransaction
+    FirebaseUserHealthScore, FirebaseUserGoalInsights, FirebaseUserProfile
 )
 
 # Load environment variables from .env
@@ -56,11 +55,6 @@ DATA_ENDPOINTS = [
 def login():
     phone = request.json.get('phone')
     session['phone'] = phone
-    return jsonify({'success': True})
-
-@app.route('/logout', methods=['POST'])
-def logout():
-    session.clear()
     return jsonify({'success': True})
 
 @app.route('/financial-data', methods=['GET'])
@@ -158,26 +152,7 @@ def recommendations():
         logging.error(f"Error calling Gemini API: {e}")
         return jsonify({"error": "Failed to get recommendations"}), 500
 
-# Helper function to get last_updated timestamp from Firebase records
-def get_firebase_last_updated(collection_name, phone):
-    """Get the last_updated timestamp from a Firebase document"""
-    try:
-        db = get_firestore_db()
-        if db:
-            doc_ref = db.collection(collection_name).document(phone)
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                last_updated = data.get('last_updated')
-                if last_updated:
-                    if hasattr(last_updated, 'isoformat'):
-                        return last_updated.isoformat()
-                    else:
-                        return str(last_updated)
-    except Exception as e:
-        logging.error(f"Error getting last_updated timestamp from {collection_name}: {e}")
-    return None
-
+# Firebase-based functions (replacing SQLite functions)
 def get_cached_insights(phone, max_age_minutes=1440):
     return FirebaseUserInsights.get_cached_insights(phone, max_age_minutes)
 
@@ -222,9 +197,10 @@ def get_user_cash_assets(phone):
         if not db:
             return []
         
-        # Query cash assets for the user - simplified to avoid index requirement
+        # Query cash assets for the user
         query = db.collection(COLLECTIONS['user_cash_assets'])\
-                 .where(field_path='phone', op_string='==', value=phone)
+                 .where('phone', '==', phone)\
+                 .order_by('timestamp', direction='desc')
         
         assets = []
         for doc in query.stream():
@@ -235,9 +211,6 @@ def get_user_cash_assets(phone):
                 'description': data.get('description', ''),
                 'timestamp': data.get('timestamp')
             })
-        
-        # Sort in Python instead of Firestore to avoid index requirement
-        assets.sort(key=lambda x: x['timestamp'], reverse=True)
         
         return assets
     except Exception as e:
@@ -251,18 +224,13 @@ def add_user_cash_asset(phone, amount, description):
         if not db:
             return False
         
-        doc_ref = db.collection(COLLECTIONS['user_cash_assets']).document()
-        asset = {
+        db.collection(COLLECTIONS['user_cash_assets']).add({
             'phone': phone,
             'amount': amount,
             'description': description,
             'timestamp': datetime.now(timezone.utc)
-        }
-        doc_ref.set(asset)
-        # Add as credit transaction
-        FirebaseUserCashTransaction.add_transaction(phone, amount, description, 'credit')
-        asset['id'] = doc_ref.id
-        return asset
+        })
+        return True
     except Exception as e:
         print(f"Error adding user cash asset: {e}")
         return False
@@ -282,26 +250,12 @@ def delete_user_cash_asset(phone, asset_id):
             data = doc.to_dict()
             if data.get('phone') == phone:
                 doc_ref.delete()
-                # Add as debit transaction
-                FirebaseUserCashTransaction.add_transaction(phone, data.get('amount'), data.get('description'), 'debit')
                 return True
         
         return False
     except Exception as e:
         print(f"Error deleting user cash asset: {e}")
         return False
-
-@app.route('/cash-transactions', methods=['GET'])
-def cash_transactions():
-    phone = session.get('phone')
-    if not phone:
-        return jsonify({'error': 'Not logged in'}), 401
-    txns = FirebaseUserCashTransaction.get_transactions(phone)
-    # Format timestamps as ISO
-    for t in txns:
-        if t['timestamp']:
-            t['timestamp'] = t['timestamp'].isoformat() if hasattr(t['timestamp'], 'isoformat') else str(t['timestamp'])
-    return jsonify({'transactions': txns})
 
 @app.route('/goals', methods=['GET', 'POST'])
 def user_goals():
@@ -334,58 +288,26 @@ def insights():
                 set_user_goals(phone, goals)
         except Exception:
             goals = None
-    
-    # For GET requests, check if user has existing goals for goal-based insights
-    if request.method == 'GET' and not goals:
-        try:
-            existing_goals = get_user_goals(phone)
-            if existing_goals and isinstance(existing_goals, list) and len(existing_goals) > 0:
-                goals = existing_goals
-        except Exception:
-            goals = None
 
     refresh = request.args.get('refresh', 'false').lower() == 'true'
     
-    # Handle goal-based insights caching (only if goals are present)
-    if goals and (isinstance(goals, list) and len(goals) > 0):
-        # Check if goals have changed by comparing with stored goals
-        stored_goals = get_user_goals(phone)
-        goals_changed = False
-        
-        if stored_goals and isinstance(stored_goals, list):
-            # Compare current goals with stored goals
-            if len(goals) != len(stored_goals):
-                goals_changed = True
-            else:
-                # Compare each goal
-                for i, goal in enumerate(goals):
-                    if i >= len(stored_goals) or goal != stored_goals[i]:
-                        goals_changed = True
-                        break
-        else:
-            goals_changed = True
-        
-        # If goals have changed, force refresh to get new insights
-        if goals_changed:
-            refresh = True
-        
+    # Handle goal-based insights caching
+    if goals:
         cached = None if refresh else get_cached_goal_insights(phone)
         if cached:
-            last_updated = get_firebase_last_updated(COLLECTIONS['user_goal_insights'], phone)
             return jsonify({
                 'insights': cached, 
                 'cached': True,
-                'last_updated': last_updated or datetime.now(timezone.utc).isoformat()
+                'last_updated': datetime.now(timezone.utc).isoformat()
             })
     else:
-        # Handle general insights caching (works without goals)
+        # Handle general insights caching
         cached = None if refresh else get_cached_insights(phone)
         if cached:
-            last_updated = get_firebase_last_updated(COLLECTIONS['user_insights'], phone)
             return jsonify({
                 'insights': cached, 
                 'cached': True,
-                'last_updated': last_updated or datetime.now(timezone.utc).isoformat()
+                'last_updated': datetime.now(timezone.utc).isoformat()
             })
 
     user_data = {}
@@ -432,17 +354,15 @@ def insights():
                     cleaned_text = re.sub(r'```$', '', cleaned_text)
                     cleaned_text = cleaned_text.strip()
                 insights = json.loads(cleaned_text)
-                if goals and (isinstance(goals, list) and len(goals) > 0):
+                if goals:
                     set_cached_goal_insights(phone, insights)
-                    last_updated = get_firebase_last_updated(COLLECTIONS['user_goal_insights'], phone)
                 else:
                     set_cached_insights(phone, insights)
-                    last_updated = get_firebase_last_updated(COLLECTIONS['user_insights'], phone)
                 
                 return jsonify({
                     "insights": insights, 
                     'cached': False,
-                    'last_updated': last_updated or datetime.now(timezone.utc).isoformat()
+                    'last_updated': datetime.now(timezone.utc).isoformat()
                 })
             except json.JSONDecodeError as e:
                 logging.error(f"Failed to parse Gemini response as JSON: {e}")
@@ -453,28 +373,11 @@ def insights():
         logging.error(f"Error calling Gemini API: {e}")
         return jsonify({"error": "Failed to get insights"}), 500
 
-@app.route('/health-score', methods=['GET', 'POST'])
+@app.route('/health-score', methods=['POST'])
 def health_score():
     phone = session.get('phone')
     if not phone:
         return jsonify({'error': 'Not logged in'}), 401
-
-    # Check for refresh parameter from query string
-    refresh = request.args.get('refresh', 'false').lower() == 'true'
-    
-    # Accept optional goals from frontend
-    goals = request.json.get('goals') if request.is_json else None
-
-    # Check cache first (unless refresh is requested)
-    if not refresh:
-        cached = get_cached_health_score(phone)
-        if cached:
-            # Get the last updated timestamp from Firebase
-            last_updated = get_firebase_last_updated(COLLECTIONS['user_health_score'], phone)
-            if last_updated:
-                cached['last_updated'] = last_updated
-            
-            return jsonify(cached)
 
     user_data = {}
     for endpoint in DATA_ENDPOINTS:
@@ -490,15 +393,15 @@ def health_score():
             user_data[endpoint] = None
 
     prompt = (
-        "Act as a top-tier Indian financial advisor. "
-        "Given the user's financial data below, "
-        + ("and the user's stated financial goals, " if goals else "")
-        + "analyze and return a JSON object with: "
-        "'score' (overall health score, 0-100), and 'metrics' (an array of objects, each with 'label', 'value' (0-100), and 'explanation'). "
-        "Metrics should include: Emergency Fund, Debt Management, Retirement Planning, Insurance Coverage, Tax Efficiency. "
-        "Be concise and accurate. Respond ONLY with the JSON object, no extra text.\n"
-        f"User financial data: {user_data}\n"
-        + (f"User goals: {goals}\n" if goals else "")
+        "Act as a financial health expert. "
+        "Given the user's financial data below, generate a comprehensive financial health score and analysis. "
+        "Respond with a JSON object containing: "
+        "score (0-100), category (Excellent/Good/Fair/Poor), breakdown (object with scores for different aspects), "
+        "strengths (array of positive points), weaknesses (array of areas to improve), "
+        "recommendations (array of specific actions to improve score), and overall_analysis (detailed explanation). "
+        "Focus on Indian financial context including savings, investments, debt management, emergency funds, and financial planning. "
+        "Respond ONLY with a JSON object, no extra text.\n"
+        f"User financial data: {user_data}"
     )
     gemini_payload = {
         "contents": [{"parts": [{"text": prompt}]}]
@@ -518,23 +421,17 @@ def health_score():
                     cleaned_text = re.sub(r'^```[a-zA-Z]*\s*', '', cleaned_text)
                     cleaned_text = re.sub(r'```$', '', cleaned_text)
                     cleaned_text = cleaned_text.strip()
-                result = json.loads(cleaned_text)
-                # Cache the result
-                set_cached_health_score(phone, result)
-                
-                # Get the last updated timestamp for the response
-                last_updated = get_firebase_last_updated(COLLECTIONS['user_health_score'], phone)
-                if last_updated:
-                    result['last_updated'] = last_updated
-                
-                return jsonify(result)
-            except Exception as e:
-                logging.error(f"Failed to parse Gemini health score JSON: {e}\nRaw text: {text}")
-                return jsonify({"error": "Failed to parse Gemini health score JSON", "raw": text}), 500
-        return jsonify({"error": "No candidates from Gemini", "raw": gemini_resp.json()}), 500
+                health_score_data = json.loads(cleaned_text)
+                set_cached_health_score(phone, health_score_data)
+                return jsonify(health_score_data)
+            except json.JSONDecodeError as e:
+                logging.error(f"Failed to parse Gemini response as JSON: {e}")
+                return jsonify({"error": "Failed to parse AI response"}), 500
+        else:
+            return jsonify({"error": "No response from Gemini API"}), 500
     except Exception as e:
-        logging.exception("Error calling Gemini API for health score")
-        return jsonify({"error": "Exception calling Gemini API", "details": str(e)}), 500
+        logging.error(f"Error calling Gemini API: {e}")
+        return jsonify({"error": "Failed to get health score"}), 500
 
 @app.route('/cash-asset', methods=['GET', 'POST', 'DELETE'])
 def cash_asset():
@@ -596,7 +493,7 @@ def chatbot():
     if not user_message:
         return jsonify({'error': 'No message provided'}), 400
 
-    # Get last 7 days chat history from DB
+    # Get last 7 days chat history from Firebase
     chat_history_db = get_chat_history(phone, days=7)
     chat_history = [{'role': msg['role'], 'text': msg['text']} for msg in chat_history_db]
     
@@ -622,158 +519,30 @@ def chatbot():
     """
     
     try:
-        # Analyze the message first
-        analysis_payload = {
+        analysis_resp = requests.post(GEMINI_API_URL, json={
             "contents": [{"parts": [{"text": analysis_prompt}]}]
-        }
-        analysis_resp = requests.post(GEMINI_API_URL, json=analysis_payload)
-        
-        if analysis_resp.status_code != 200:
-            logging.error(f"Gemini API error in analysis: {analysis_resp.status_code} {analysis_resp.text}")
-            return jsonify({"error": "Gemini API error", "details": analysis_resp.text}), 500
-        
-        analysis_text = analysis_resp.json().get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '{}')
-        
-        # Parse the analysis response
-        try:
-            # Clean up the response if it has markdown
-            cleaned_text = analysis_text.strip()
-            if cleaned_text.startswith('```'):
-                cleaned_text = re.sub(r'^```[a-zA-Z]*\s*', '', cleaned_text)
-                cleaned_text = re.sub(r'```$', '', cleaned_text)
-                cleaned_text = cleaned_text.strip()
-            
-            analysis_result = json.loads(cleaned_text)
-            requires_financial_data = analysis_result.get('requires_financial_data', False)
-            response_type = analysis_result.get('response_type', 'general_conversation')
-            
-        except Exception as e:
-            logging.error(f"Failed to parse analysis response: {e}")
-            # Default to requiring financial data if parsing fails
-            requires_financial_data = True
-            response_type = 'financial_analysis'
-        
-        # Fetch user data only if needed
-        user_data = {}
-        if requires_financial_data:
-            for endpoint in DATA_ENDPOINTS:
-                try:
-                    user_dir = os.path.join(TEST_DATA_DIR, phone)
-                    file_path = os.path.join(user_dir, f"{endpoint}.json")
-                    if os.path.exists(file_path):
-                        with open(file_path, 'r') as f:
-                            user_data[endpoint] = json.load(f)
-                    else:
-                        user_data[endpoint] = None
-                except Exception as e:
-                    user_data[endpoint] = None
-        
-        # Get user profile for personalized responses
-        user_profile = get_user_profile(phone)
-        user_name = user_profile.name if user_profile else 'User'
-        
-        # Generate appropriate response based on type
-        if response_type == 'greeting':
-            response_prompt = f"""
-            You are ArthaPandit, a friendly and knowledgeable financial expert AI assistant. 
-            The user's name is {user_name}.
-            
-            Respond to this greeting in a warm, professional manner. Introduce yourself briefly as ArthaPandit and mention that you can help with financial planning, investment advice, tax optimization, and general financial questions.
-            
-            User message: "{user_message}"
-            
-            Keep your response friendly, concise (2-3 sentences), and professional.
-            """
-        elif response_type == 'general_conversation':
-            response_prompt = f"""
-            You are ArthaPandit, a friendly and knowledgeable financial expert AI assistant. 
-            The user's name is {user_name}.
-            
-            Respond to this general conversation naturally, but always try to gently steer the conversation toward financial topics when appropriate. You can discuss general topics but maintain your identity as a financial expert.
-            
-            User message: "{user_message}"
-            
-            Keep your response conversational, helpful, and try to connect it to financial wellness when possible.
-            """
-        elif response_type == 'help':
-            response_prompt = f"""
-            You are ArthaPandit, a friendly and knowledgeable financial expert AI assistant. 
-            The user's name is {user_name}.
-            
-            Provide helpful information about what you can do. You can help with:
-            - Portfolio analysis and investment advice
-            - Tax planning and optimization
-            - Financial goal setting and tracking
-            - Budget analysis and spending optimization
-            - Insurance and risk management
-            - Retirement planning
-            - General financial education
-            
-            User message: "{user_message}"
-            
-            Provide a comprehensive but concise overview of your capabilities.
-            """
-        else:  # financial_analysis
-            # Add the new user message to the history for context
-            chat_history.append({'role': 'user', 'text': user_message})
-            history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['text']}" for msg in chat_history[-6:]])  # Last 6 messages for context
-            
-            response_prompt = f"""
-            You are ArthaPandit, a top-tier Indian financial advisor and wealth manager. 
-            The user's name is {user_name}.
-            
-            Analyze the user's financial data and provide personalized, actionable advice. Be specific, practical, and focus on Indian financial context (tax laws, investment options, etc.).
-            
-            User financial data: {user_data}
-            Recent conversation history: {history_text}
-            
-            Provide detailed, personalized financial advice based on the user's actual data. Include specific recommendations, potential savings/benefits, and actionable steps.
-            """
-        
-        # Generate the response
-        response_payload = {
-            "contents": [{"parts": [{"text": response_prompt}]}]
-        }
-        response_resp = requests.post(GEMINI_API_URL, json=response_payload)
-        
-        if response_resp.status_code != 200:
-            logging.error(f"Gemini API error in response: {response_resp.status_code} {response_resp.text}")
-            return jsonify({"error": "Gemini API error", "details": response_resp.text}), 500
-        
-        gemini_text = response_resp.json().get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', str(response_resp.json()))
-        
-        # Store user and assistant messages in DB
-        add_chat_message(phone, 'user', user_message)
-        add_chat_message(phone, 'assistant', gemini_text)
-        
-        # Return last 7 days history (including the new ones)
-        chat_history_db = get_chat_history(phone, days=7)
-        chat_history = [{'role': msg['role'], 'text': msg['text']} for msg in chat_history_db]
-        
-        return jsonify({
-            "response": gemini_text, 
-            "history": chat_history,
-            "response_type": response_type,
-            "requires_financial_data": requires_financial_data
         })
         
-    except Exception as e:
-        logging.exception("Error calling Gemini API")
-        return jsonify({"error": "Exception calling Gemini API", "details": str(e)}), 500
+        if analysis_resp.status_code == 200:
+            analysis_candidates = analysis_resp.json().get('candidates', [])
+            if analysis_candidates:
+                analysis_text = analysis_candidates[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                try:
+                    analysis = json.loads(analysis_text.strip())
+                    requires_financial_data = analysis.get('requires_financial_data', False)
+                except:
+                    requires_financial_data = True  # Default to requiring data if analysis fails
+            else:
+                requires_financial_data = True
+        else:
+            requires_financial_data = True
+    except:
+        requires_financial_data = True
 
-@app.route('/generate-questions', methods=['POST'])
-def generate_questions():
-    phone = session.get('phone')
-    if not phone:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    # Get conversation context
-    conversation_context = request.json.get('context', '')
-    is_initial = request.json.get('is_initial', False)
-    
-    # Fetch user data for personalized questions
-    user_data = {}
-    if not is_initial:
+    # Build context based on whether financial data is needed
+    if requires_financial_data:
+        # Get user's financial data
+        user_data = {}
         for endpoint in DATA_ENDPOINTS:
             try:
                 user_dir = os.path.join(TEST_DATA_DIR, phone)
@@ -785,71 +554,91 @@ def generate_questions():
                     user_data[endpoint] = None
             except Exception as e:
                 user_data[endpoint] = None
-
-    # Get user profile for personalization
-    user_profile = get_user_profile(phone)
-    user_name = user_profile.get('name', 'User') if isinstance(user_profile, dict) else getattr(user_profile, 'name', 'User')
-    
-    if is_initial:
-        # Generate initial questions
-        prompt = f"""
-        You are ArthaPandit, a financial expert AI assistant. Generate exactly 3 engaging \"what if\" scenario simulation questions to start a conversation with a user about their finances.
         
-        User name: {user_name}
+        context = f"""
+        You are a professional Indian financial advisor. The user has provided their financial data below.
+        Use this data to provide personalized, accurate financial advice.
         
-        Generate questions that are specific \"what if\" scenarios like:
-        - \"What if I increase my SIP by ₹5,000?\"
-        - \"What if I retire at 50?\"
-        - \"What if I invest ₹10,000 more in mutual funds?\"
-        - \"What if I buy a house worth ₹50 lakhs?\"
-        - \"What if I start a ₹20,000 monthly SIP?\"
-        - \"What if I invest ₹5 lakhs in stocks?\"
+        User's Financial Data: {user_data}
         
-        Focus on:
-        1. SIP/Investment amount changes
-        2. Retirement age scenarios
-        3. Major purchase scenarios (house, car, etc.)
-        4. Investment allocation changes
-        5. Tax-saving scenarios
+        User's Message: {user_message}
         
-        Make them specific with actual amounts and realistic scenarios for Indian context.
-        
-        Respond with ONLY a JSON array of exactly 3 questions, no extra text:
-        [
-            \"What if I increase my SIP by ₹5,000?\",
-            \"What if I retire at 50?\",
-            \"What if I invest ₹10,000 more in mutual funds?\"
-        ]
+        Provide a helpful, actionable response based on their financial situation.
         """
     else:
-        # Generate follow-up questions based on conversation context
-        prompt = f"""
-        You are ArthaPandit, a financial expert AI assistant. Based on the recent conversation context, generate exactly 3 relevant \"what if\" scenario simulation questions.
+        context = f"""
+        You are a helpful financial assistant. The user is asking a general question.
         
-        User name: {user_name}
-        Recent conversation: {conversation_context}
-        User financial data: {user_data}
+        User's Message: {user_message}
         
-        Generate \"what if\" questions that:
-        1. Are directly related to what was just discussed
-        2. Explore different scenarios based on the topic
-        3. Suggest realistic \"what if\" variations
-        
-        Examples of good follow-up \"what if\" questions:
-        - If discussing SIP: \"What if I increase my SIP by ₹3,000 more?\"
-        - If discussing retirement: \"What if I retire at 45 instead?\"
-        - If discussing investments: \"What if I invest ₹5 lakhs in stocks?\"
-        - If discussing tax: \"What if I invest ₹1.5 lakhs in ELSS?\"
-        
-        Make them specific with actual amounts and realistic scenarios.
-        
-        Respond with ONLY a JSON array of exactly 3 questions, no extra text:
-        [
-            \"What if I increase my SIP by ₹3,000?\",
-            \"What if I invest ₹5 lakhs in stocks?\",
-            \"What if I retire at 45?\"
-        ]
+        Provide a friendly, helpful response. If they ask about financial topics, 
+        encourage them to share their financial data for personalized advice.
         """
+
+    # Build the full prompt with chat history
+    system_prompt = DEFAULT_SYSTEM_INSTRUCTION
+    full_prompt = f"{system_prompt}\n\n{context}"
+    
+    # Add chat history if available
+    if chat_history:
+        history_text = "\n".join([f"{msg['role']}: {msg['text']}" for msg in chat_history[-10:]])  # Last 10 messages
+        full_prompt = f"{full_prompt}\n\nRecent conversation:\n{history_text}\n\nAssistant:"
+
+    gemini_payload = {
+        "contents": [{"parts": [{"text": full_prompt}]}]
+    }
+    
+    try:
+        gemini_resp = requests.post(GEMINI_API_URL, json=gemini_payload)
+        if gemini_resp.status_code != 200:
+            logging.error(f"Gemini API error: {gemini_resp.status_code} {gemini_resp.text}")
+            return jsonify({"error": "Gemini API error", "details": gemini_resp.text}), 500
+        
+        candidates = gemini_resp.json().get('candidates', [])
+        if candidates:
+            assistant_message = candidates[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+            
+            # Save both messages to Firebase
+            add_chat_message(phone, 'user', user_message)
+            add_chat_message(phone, 'assistant', assistant_message)
+            
+            return jsonify({
+                "response": assistant_message,
+                "requires_financial_data": requires_financial_data
+            })
+        else:
+            return jsonify({"error": "No response from Gemini API"}), 500
+    except Exception as e:
+        logging.error(f"Error calling Gemini API: {e}")
+        return jsonify({"error": "Failed to get response"}), 500
+
+@app.route('/generate-questions', methods=['POST'])
+def generate_questions():
+    phone = session.get('phone')
+    if not phone:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    user_data = {}
+    for endpoint in DATA_ENDPOINTS:
+        try:
+            user_dir = os.path.join(TEST_DATA_DIR, phone)
+            file_path = os.path.join(user_dir, f"{endpoint}.json")
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    user_data[endpoint] = json.load(f)
+            else:
+                user_data[endpoint] = None
+        except Exception as e:
+            user_data[endpoint] = None
+
+    prompt = (
+        "Act as a financial advisor. Based on the user's financial data below, "
+        "generate 5-8 relevant, insightful questions that would help understand their financial goals, "
+        "concerns, or areas they want to improve. "
+        "Questions should be specific to their financial situation and encourage deeper thinking. "
+        "Respond with ONLY a JSON array of question strings, no extra text.\n"
+        f"User financial data: {user_data}"
+    )
     
     gemini_payload = {
         "contents": [{"parts": [{"text": prompt}]}]
@@ -865,40 +654,66 @@ def generate_questions():
         if candidates:
             text = candidates[0].get('content', {}).get('parts', [{}])[0].get('text', '')
             try:
-                # Clean up the response if it has markdown
+                # Remove Markdown code block markers if present
                 cleaned_text = text.strip()
                 if cleaned_text.startswith('```'):
                     cleaned_text = re.sub(r'^```[a-zA-Z]*\s*', '', cleaned_text)
                     cleaned_text = re.sub(r'```$', '', cleaned_text)
                     cleaned_text = cleaned_text.strip()
-                
                 questions = json.loads(cleaned_text)
-                # Ensure all questions start with 'What if I' and limit to 3
-                filtered = [q if q.lower().startswith('what if i') else f"What if I {q[0].lower() + q[1:]}" for q in questions]
-                return jsonify({"questions": filtered[:3]})
-            except Exception as e:
-                logging.error(f"Failed to parse Gemini questions JSON: {e}\nRaw text: {text}")
-                # Return default questions if parsing fails
-                default_questions = [
-                    "What's my current financial health score?",
-                    "How can I optimize my tax savings?",
-                    "What investment opportunities should I consider?"
-                ]
-                return jsonify({"questions": default_questions})
-        
-        return jsonify({"error": "No candidates from Gemini", "raw": gemini_resp.json()}), 500
+                return jsonify({"questions": questions})
+            except json.JSONDecodeError as e:
+                logging.error(f"Failed to parse Gemini response as JSON: {e}")
+                return jsonify({"error": "Failed to parse AI response"}), 500
+        else:
+            return jsonify({"error": "No response from Gemini API"}), 500
     except Exception as e:
-        logging.exception("Error calling Gemini API for questions")
-        return jsonify({"error": "Exception calling Gemini API", "details": str(e)}), 500
+        logging.error(f"Error calling Gemini API: {e}")
+        return jsonify({"error": "Failed to generate questions"}), 500
 
 # News and profile functions using Firebase
 def get_cached_news(phone, max_age_minutes=1440):
     """Get cached news from Firestore"""
-    return FirebaseUserNews.get_cached_news(phone, max_age_minutes)
+    try:
+        db = get_firestore_db()
+        if not db:
+            return None
+            
+        doc_ref = db.collection(COLLECTIONS['user_news']).document(phone)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            data = doc.to_dict()
+            last_updated = data.get('last_updated')
+            if last_updated:
+                if hasattr(last_updated, 'timestamp'):
+                    last_updated = datetime.fromtimestamp(last_updated.timestamp(), tz=timezone.utc)
+                
+                age = datetime.now(timezone.utc) - last_updated
+                if age.total_seconds() < max_age_minutes * 60:
+                    return json.loads(data.get('news_json', '[]'))
+        return None
+    except Exception as e:
+        print(f"Error getting cached news: {e}")
+        return None
 
 def set_cached_news(phone, news_items):
     """Cache news in Firestore"""
-    return FirebaseUserNews.set_cached_news(phone, news_items)
+    try:
+        db = get_firestore_db()
+        if not db:
+            return False
+            
+        doc_ref = db.collection(COLLECTIONS['user_news']).document(phone)
+        doc_ref.set({
+            'phone': phone,
+            'news_json': json.dumps(news_items),
+            'last_updated': datetime.now(timezone.utc)
+        })
+        return True
+    except Exception as e:
+        print(f"Error setting cached news: {e}")
+        return False
 
 @app.route('/news', methods=['GET'])
 def investment_insights():
@@ -912,11 +727,10 @@ def investment_insights():
     if not refresh:
         cached = get_cached_news(phone)
         if cached:
-            last_updated = get_firebase_last_updated(COLLECTIONS['user_news'], phone)
             return jsonify({
                 'news': cached,
                 'cached': True,
-                'last_updated': last_updated or datetime.now(timezone.utc).isoformat()
+                'last_updated': datetime.now(timezone.utc).isoformat()
             })
 
     user_data = {}
@@ -932,19 +746,16 @@ def investment_insights():
         except Exception as e:
             user_data[endpoint] = None
 
-    today_str = datetime.now().strftime('%Y-%m-%d')
-    last_7_days_str = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-
-    # Build a prompt for Gemini
     prompt = (
-        f"You are a financial news assistant. Given the user's investment holdings below (mutual funds, stocks, etc.), "
-        f"generate a JSON array of 3-7 highly relevant, recent, and personalized news headlines or updates for each holding. "
-        f"Only include news from the last 7 days (today is {today_str}, only include news dated {last_7_days_str} to {today_str}). "
-        f"If there is no news for a holding in the last 7 days, do not include it. "
-        f"For each news item, include: title, summary, date (YYYY-MM-DD), holdingName (the fund/stock/etc.), and a link (if possible). "
-        f"Focus on news that would matter to an Indian investor, such as fund performance, regulatory changes, management updates, major market moves, or anything that could impact the user's portfolio. "
-        f"Respond ONLY with a JSON array, no extra text.\n"
-        f"User investment data: {user_data}\n"
+        "Act as a financial news analyst and investment expert. "
+        "Based on the user's financial data below, generate 3-5 personalized investment insights and news recommendations. "
+        "Each insight should be relevant to their portfolio and financial situation. "
+        "Respond with a JSON array where each item has: title, summary, relevance (why it matters to this user), "
+        "action (what they should consider), category (market_update, tax_news, investment_opportunity, risk_alert), "
+        "and impact (positive/neutral/negative). "
+        "Focus on Indian markets, tax implications, and personal finance. "
+        "Respond ONLY with a JSON array, no extra text.\n"
+        f"User financial data: {user_data}"
     )
     
     gemini_payload = {
@@ -970,11 +781,10 @@ def investment_insights():
                 news_items = json.loads(cleaned_text)
                 set_cached_news(phone, news_items)
                 
-                last_updated = get_firebase_last_updated(COLLECTIONS['user_news'], phone)
                 return jsonify({
                     'news': news_items,
                     'cached': False,
-                    'last_updated': last_updated or datetime.now(timezone.utc).isoformat()
+                    'last_updated': datetime.now(timezone.utc).isoformat()
                 })
             except json.JSONDecodeError as e:
                 logging.error(f"Failed to parse Gemini response as JSON: {e}")
@@ -991,63 +801,18 @@ def user_profile():
     if not phone:
         return jsonify({'error': 'Not logged in'}), 401
 
-    def format_datetime(dt_value):
-        """Helper function to format datetime values from Firebase"""
-        if dt_value is None:
-            return None
-        if hasattr(dt_value, 'isoformat'):
-            return dt_value.isoformat()
-        elif isinstance(dt_value, str):
-            return dt_value
+    if request.method == 'PUT':
+        profile_data = request.json
+        if update_user_profile(phone, profile_data):
+            return jsonify({'success': True})
         else:
-            return str(dt_value)
-
-    if request.method == 'GET':
+            return jsonify({'error': 'Failed to update profile'}), 500
+    else:
         profile = get_user_profile(phone)
         if profile:
-            return jsonify({
-                'name': profile.name,
-                'email': profile.email,
-                'date_of_birth': format_datetime(profile.date_of_birth),
-                'occupation': profile.occupation,
-                'address': profile.address,
-                'emergency_contact': profile.emergency_contact,
-                'risk_profile': profile.risk_profile,
-                'investment_goals': profile.investment_goals,
-                'created_at': format_datetime(profile.created_at),
-                'updated_at': format_datetime(profile.updated_at)
-            })
+            return jsonify(profile)
         else:
             return jsonify({'error': 'Failed to get profile'}), 500
-    
-    elif request.method == 'PUT':
-        data = request.json
-        try:
-            # Handle date conversion
-            if 'date_of_birth' in data and data['date_of_birth']:
-                data['date_of_birth'] = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
-            
-            profile = update_user_profile(phone, data)
-            if profile:
-                return jsonify({
-                    'success': True,
-                    'message': 'Profile updated successfully',
-                    'profile': {
-                        'name': profile.name,
-                        'email': profile.email,
-                        'date_of_birth': format_datetime(profile.date_of_birth),
-                        'occupation': profile.occupation,
-                        'address': profile.address,
-                        'emergency_contact': profile.emergency_contact,
-                        'risk_profile': profile.risk_profile,
-                        'investment_goals': profile.investment_goals,
-                        'updated_at': format_datetime(profile.updated_at)
-                    }
-                })
-            else:
-                return jsonify({'error': 'Failed to update profile'}), 500
-        except Exception as e:
-            return jsonify({'error': 'Failed to update profile', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 5001))) 

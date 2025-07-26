@@ -38,6 +38,8 @@ export default function Goals({ onGoalChange }) {
   const [goalInsights, setGoalInsights] = useState(null);
   const [loadingGoalInsights, setLoadingGoalInsights] = useState(false);
   const [errorGoalInsights, setErrorGoalInsights] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [cached, setCached] = useState(false);
 
   // Load goals and cached insights from database on component mount
   useEffect(() => {
@@ -46,6 +48,8 @@ export default function Goals({ onGoalChange }) {
         const res = await axios.get('/goals', { withCredentials: true });
         if (res.data && Array.isArray(res.data.goals)) {
           setGoals(res.data.goals);
+          // After goals are loaded, fetch cached insights
+          await loadCachedGoalInsights(res.data.goals);
         }
       } catch (err) {
         setError('Could not load goals.');
@@ -53,12 +57,18 @@ export default function Goals({ onGoalChange }) {
         setLoading(false);
       }
     };
-    const loadCachedGoalInsights = async () => {
+    
+    const loadCachedGoalInsights = async (loadedGoals) => {
       try {
         setLoadingGoalInsights(true);
-        const res = await axios.post('/insights', {}, { withCredentials: true });
-        if (res.data && Array.isArray(res.data.insights) && res.data.insights.length > 0) {
-          setGoalInsights(res.data.insights);
+        // Only fetch insights if there are goals
+        if (loadedGoals && loadedGoals.length > 0) {
+          const res = await axios.post('/insights', { goals: loadedGoals }, { withCredentials: true });
+          if (res.data && Array.isArray(res.data.insights) && res.data.insights.length > 0) {
+            setGoalInsights(res.data.insights);
+            setLastUpdated(res.data.last_updated);
+            setCached(res.data.cached || false);
+          }
         }
       } catch (e) {
         // Silently fail - no cached insights
@@ -66,8 +76,8 @@ export default function Goals({ onGoalChange }) {
         setLoadingGoalInsights(false);
       }
     };
+    
     loadGoals();
-    loadCachedGoalInsights();
   }, []);
 
   const saveGoalsToDB = async (newGoals) => {
@@ -106,20 +116,36 @@ export default function Goals({ onGoalChange }) {
 
   // Fetch goal-based insights (optionally refresh)
   const handleRequestGoalInsights = async (refresh = false) => {
+    // Don't proceed if no goals exist
+    if (!goals || goals.length === 0) {
+      setErrorGoalInsights('Please add some goals first to get personalized insights.');
+      return;
+    }
+
     setLoadingGoalInsights(true);
     setErrorGoalInsights(null);
     if (refresh) {
       setGoalInsights(null);
+      setLastUpdated(null);
+      setCached(false);
     }
     try {
-      const res = await axios.post('/insights', { goals }, { withCredentials: true });
+      // Send goals data for proper context, use POST to include goals in request body
+      const url = refresh ? '/insights?refresh=true' : '/insights';
+      const res = await axios.post(url, { goals }, { withCredentials: true });
       if (res.data && Array.isArray(res.data.insights)) {
         setGoalInsights(res.data.insights);
+        setLastUpdated(res.data.last_updated);
+        setCached(res.data.cached || false);
       } else {
         setGoalInsights([]);
+        setLastUpdated(null);
+        setCached(false);
       }
     } catch (e) {
       setGoalInsights(null);
+      setLastUpdated(null);
+      setCached(false);
       setErrorGoalInsights('Could not fetch goal-based insights.');
     } finally {
       setLoadingGoalInsights(false);
@@ -160,7 +186,54 @@ export default function Goals({ onGoalChange }) {
       </Box>
       {/* Goals Grid */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress size={40} /></Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 6, gap: 2 }}>
+          <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+            {(() => {
+              const messages = [
+                "Loading your financial dreams...",
+                "Unpacking your money goals...",
+                "Assembling your wealth roadmap...",
+                "Polishing your financial aspirations...",
+                "Charging your goal batteries...",
+                "Warming up your ambition engine...",
+                "Preparing your success toolkit...",
+                "Loading your future self...",
+                "Calibrating your money compass...",
+                "Setting up your wealth GPS..."
+              ];
+              return messages[Math.floor(Math.random() * messages.length)];
+            })()}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.2s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.4s'
+            }} />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+            Goals are loading faster than your salary... almost
+          </Typography>
+        </Box>
       ) : filteredGoals.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8, mb: 6 }}>
           <Typography variant="h6" color="text.secondary" mb={2}>No goals yet. Click <b>Add Goal</b> to get started!</Typography>
@@ -263,7 +336,54 @@ export default function Goals({ onGoalChange }) {
       </Dialog>
       {/* Goal-based insights display */}
       {loadingGoalInsights && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}><CircularProgress /></Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2, gap: 2 }}>
+          <Typography variant="h6" color="secondary" sx={{ textAlign: 'center', mb: 1 }}>
+            {(() => {
+              const messages = [
+                "Consulting the financial crystal ball...",
+                "Decoding your money patterns...",
+                "Summoning financial wisdom...",
+                "Analyzing your wealth potential...",
+                "Crunching the numbers...",
+                "Consulting with money mentors...",
+                "Unlocking financial insights...",
+                "Reading your financial tea leaves...",
+                "Deciphering your money story...",
+                "Connecting the financial dots..."
+              ];
+              return messages[Math.floor(Math.random() * messages.length)];
+            })()}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'secondary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'secondary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.2s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'secondary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.4s'
+            }} />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+            AI is thinking harder than your accountant
+          </Typography>
+        </Box>
       )}
       {errorGoalInsights && (
         <Alert severity="error" sx={{ mb: 2 }}>{errorGoalInsights}</Alert>
@@ -271,7 +391,26 @@ export default function Goals({ onGoalChange }) {
       {goals.length > 0 && goalInsights && Array.isArray(goalInsights) && goalInsights.length > 0 && (
         <Card sx={{ borderRadius: 3, mb: 3, background: '#f3f7fa' }}>
           <CardContent>
-            <Typography variant="subtitle1" fontWeight={700} mb={2} color="secondary">Goal-Based Insights & Alerts</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={700} color="secondary">
+                Goal-Based Insights & Alerts
+              </Typography>
+              {lastUpdated && (
+                <Chip
+                  label={`${cached ? 'Cached' : 'Fresh'} • ${new Date(lastUpdated).toLocaleString('en-IN', { 
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}`}
+                  size="small"
+                  variant="outlined"
+                  color={cached ? "default" : "success"}
+                />
+              )}
+            </Box>
             <List dense>
               {goalInsights.map((item, idx) => (
                 <ListItem key={item.title + idx} alignItems="flex-start">
@@ -297,7 +436,21 @@ export default function Goals({ onGoalChange }) {
   );
 }
 
-// Add global style for spin animation
+// Add global style for spin animation and pulse animation
 const style = document.createElement('style');
-style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+style.innerHTML = `
+  @keyframes spin { 
+    100% { transform: rotate(360deg); } 
+  }
+  @keyframes pulse { 
+    0%, 80%, 100% { 
+      opacity: 0.3; 
+      transform: scale(0.8); 
+    } 
+    40% { 
+      opacity: 1; 
+      transform: scale(1); 
+    } 
+  }
+`;
 document.head.appendChild(style); 

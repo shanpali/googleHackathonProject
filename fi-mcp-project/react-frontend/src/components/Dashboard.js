@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, CircularProgress, Button, Avatar, Fab, Fade, Chip, Tooltip, Modal, IconButton } from '@mui/material';
+import { Box, Typography, Grid, CircularProgress, Button, Avatar, Fab, Fade, Chip, Tooltip, Modal, IconButton, Skeleton } from '@mui/material';
 import FinancialOverview from './FinancialOverview';
 import AssetAllocation from './AssetAllocation';
 import Insights from './Insights';
 import HealthScore from './HealthScore';
-import NomineeSafeguard from './NomineeSafeguard';
 import RecentTransactions from './RecentTransactions';
 import axios from 'axios';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -50,6 +49,10 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [localGlobalRefreshTrigger, setLocalGlobalRefreshTrigger] = useState(0);
   const [userProfile, setUserProfile] = useState({ name: 'User' });
+  
+  // Lazy loading states for AI components
+  const [insightsLoaded, setInsightsLoaded] = useState(false);
+  const [healthScoreLoaded, setHealthScoreLoaded] = useState(false);
 
   const refreshData = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -90,6 +93,26 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
     fetchAllExportData();
   }, [localGlobalRefreshTrigger, globalRefreshTrigger]); // Add both triggers as dependencies
 
+  // Lazy load Insights component after a delay
+  useEffect(() => {
+    if (!loading && data) {
+      const timer = setTimeout(() => {
+        setInsightsLoaded(true);
+      }, 1000); // Load after 1 second
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data]);
+
+  // Lazy load HealthScore component after a delay
+  useEffect(() => {
+    if (!loading && data) {
+      const timer = setTimeout(() => {
+        setHealthScoreLoaded(true);
+      }, 1500); // Load after 1.5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data]);
+
   // Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = (event) => {
@@ -102,22 +125,20 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
     };
   }, []);
 
-  // Load cached goal insights on mount
-  useEffect(() => {
-    const loadCachedGoalInsights = async () => {
-      try {
-        const res = await axios.post('/insights', {}, { withCredentials: true });
-        if (res.data && Array.isArray(res.data.insights) && res.data.insights.length > 0) {
-          setGoalInsights(res.data.insights);
-        }
-      } catch (e) {
-        // Silently fail - no cached insights
+  const loadCachedGoalInsights = async () => {
+    try {
+      setLoadingGoalInsights(true);
+      const res = await axios.post('/insights', {}, { withCredentials: true });
+      if (res.data && Array.isArray(res.data.insights) && res.data.insights.length > 0) {
+        setGoalInsights(res.data.insights);
       }
-    };
-    loadCachedGoalInsights();
-  }, []);
+    } catch (e) {
+      // Silently fail - no cached insights
+    } finally {
+      setLoadingGoalInsights(false);
+    }
+  };
 
-  // Handler to get goal-based insights
   const handleRequestGoalInsights = async (goals, refresh = false) => {
     setLoadingGoalInsights(true);
     setErrorGoalInsights(null);
@@ -139,33 +160,91 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
     }
   };
 
-  // Fetch all exportable data
-  const fetchAllExportData = useCallback(async () => {
+  const fetchAllExportData = async () => {
     try {
-      // Proactive Insights
+      // Fetch proactive insights
       const proactiveRes = await axios.get('/insights', { withCredentials: true });
-      setProactiveInsights(Array.isArray(proactiveRes.data?.insights) ? proactiveRes.data.insights : []);
-    } catch {
-      setProactiveInsights([]);
-    }
-    try {
-      // Goal-Based Insights
-      const goalBasedRes = await axios.post('/insights', {}, { withCredentials: true });
-      setGoalBasedInsights(Array.isArray(goalBasedRes.data?.insights) ? goalBasedRes.data.insights : []);
-    } catch {
-      setGoalBasedInsights([]);
-    }
-    try {
-      // Goals
-      const goalsRes = await axios.get('/goals', { withCredentials: true });
-      setGoals(Array.isArray(goalsRes.data?.goals) ? goalsRes.data.goals : []);
-    } catch {
-      setGoals([]);
-    }
-  }, []);
+      if (proactiveRes.data && Array.isArray(proactiveRes.data.insights)) {
+        setProactiveInsights(proactiveRes.data.insights);
+      }
 
-  if (loading) return <Box sx={{ flexGrow: 1, p: 4 }}><CircularProgress /></Box>;
-  if (!data) return <Box sx={{ flexGrow: 1, p: 4 }}>No data available.</Box>;
+      // Fetch goals
+      const goalsRes = await axios.get('/goals', { withCredentials: true });
+      if (goalsRes.data && Array.isArray(goalsRes.data.goals)) {
+        setGoals(goalsRes.data.goals);
+      }
+
+      // Fetch goal-based insights
+      if (goals.length > 0) {
+        const goalInsightsRes = await axios.post('/insights', { goals }, { withCredentials: true });
+        if (goalInsightsRes.data && Array.isArray(goalInsightsRes.data.insights)) {
+          setGoalBasedInsights(goalInsightsRes.data.insights);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching export data:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        gap: 2 
+      }}>
+        <Typography variant="h4" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+          {(() => {
+            const messages = [
+              "Loading your financial command center...",
+              "Preparing your wealth dashboard...",
+              "Assembling your financial cockpit...",
+              "Building your money headquarters...",
+              "Setting up your financial control room...",
+              "Loading your wealth management hub...",
+              "Preparing your financial mission control...",
+              "Building your money operations center...",
+              "Setting up your financial dashboard...",
+              "Loading your wealth command center..."
+            ];
+            return messages[Math.floor(Math.random() * messages.length)];
+          })()}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ 
+            width: 12, 
+            height: 12, 
+            borderRadius: '50%', 
+            bgcolor: 'primary.main',
+            animation: 'pulse 1.4s ease-in-out infinite both',
+            animationDelay: '0s'
+          }} />
+          <Box sx={{ 
+            width: 12, 
+            height: 12, 
+            borderRadius: '50%', 
+            bgcolor: 'primary.main',
+            animation: 'pulse 1.4s ease-in-out infinite both',
+            animationDelay: '0.2s'
+          }} />
+          <Box sx={{ 
+            width: 12, 
+            height: 12, 
+            borderRadius: '50%', 
+            bgcolor: 'primary.main',
+            animation: 'pulse 1.4s ease-in-out infinite both',
+            animationDelay: '0.4s'
+          }} />
+        </Box>
+        <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center' }}>
+          Your financial dashboard is loading faster than your investments compound... almost
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -210,12 +289,6 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
           <Typography variant="h6" sx={{ opacity: 0.92, fontWeight: 400 }}>
             Your personalized financial dashboard for <b>{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</b>
           </Typography>
-          {/* <Chip
-            icon={<EmojiEventsIcon />}
-            label="Gold Member"
-            color="warning"
-            sx={{ mt: 1, fontWeight: 700, fontSize: 16, px: 2, borderRadius: 2, background: 'rgba(255, 214, 0, 0.15)' }}
-          /> */}
         </Box>
         <Box sx={{ flexGrow: 1 }} />
         <Fade in={true} timeout={1200}>
@@ -247,15 +320,203 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
       </Box>
 
       {/* Main Dashboard Content */}
-      <Grid container spacing={3} columns={12} mt={2}>
+      <Grid container spacing={3} columns={12}>
         <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 8' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <FinancialOverview data={data} animate onNetWorthClick={() => setSelectedTab && setSelectedTab('Portfolio')} onAssetAdded={globalRefresh} />
           <AssetAllocation data={data} />
-          <Insights data={data} />
+          
+          {/* Lazy-loaded Insights Component */}
+          {insightsLoaded ? (
+            <Insights data={data} />
+          ) : (
+            <Box sx={{ 
+              background: 'rgba(255, 255, 255, 0.8)', 
+              borderRadius: 3, 
+              p: 3, 
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(25, 118, 210, 0.1)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" fontWeight={700} color="primary">
+                  Proactive Insights & Alerts
+                </Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0s'
+                  }} />
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.2s'
+                  }} />
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.4s'
+                  }} />
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 3 }}>
+                <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+                  {(() => {
+                    const messages = [
+                      "Mining financial insights...",
+                      "Consulting the market oracle...",
+                      "Decoding your money matrix...",
+                      "Summoning financial wisdom...",
+                      "Analyzing your wealth patterns...",
+                      "Consulting with money gurus...",
+                      "Unlocking financial secrets...",
+                      "Reading the market tea leaves...",
+                      "Deciphering your financial DNA...",
+                      "Connecting the money dots..."
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                  })()}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0s'
+                  }} />
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.2s'
+                  }} />
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.4s'
+                  }} />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  AI is working harder than your financial advisor
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Box>
+        
         <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 4' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <HealthScore data={data} />
-          <NomineeSafeguard data={data} />
+          {/* Lazy-loaded HealthScore Component */}
+          {healthScoreLoaded ? (
+            <HealthScore data={data} />
+          ) : (
+            <Box sx={{ 
+              background: 'rgba(255, 255, 255, 0.8)', 
+              borderRadius: 3, 
+              p: 3, 
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(25, 118, 210, 0.1)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" fontWeight={700} color="primary">
+                  Financial Health Score
+                </Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0s'
+                  }} />
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.2s'
+                  }} />
+                  <Box sx={{ 
+                    width: 6, 
+                    height: 6, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.4s'
+                  }} />
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 3 }}>
+                <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+                  {(() => {
+                    const messages = [
+                      "Analyzing your financial DNA...",
+                      "Consulting with Warren Buffett's ghost...",
+                      "Counting your virtual money...",
+                      "Teaching your wallet to behave...",
+                      "Summoning the money gods...",
+                      "Converting coffee expenses to investments...",
+                      "Calculating your financial karma...",
+                      "Negotiating with your bank account...",
+                      "Teaching your credit card some manners...",
+                      "Convincing your savings to grow..."
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                  })()}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0s'
+                  }} />
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.2s'
+                  }} />
+                  <Box sx={{ 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'primary.main',
+                    animation: 'pulse 1.4s ease-in-out infinite both',
+                    animationDelay: '0.4s'
+                  }} />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  This might take a moment... (or two)
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
         </Box>
       </Grid>
       <RecentTransactions data={data} refreshTrigger={refreshTrigger} />
@@ -329,4 +590,20 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
       </Modal>
     </Box>
   );
-} 
+}
+
+// Add global style for pulse animation
+const pulseStyle = document.createElement('style');
+pulseStyle.innerHTML = `
+  @keyframes pulse { 
+    0%, 80%, 100% { 
+      opacity: 0.3; 
+      transform: scale(0.8); 
+    } 
+    40% { 
+      opacity: 1; 
+      transform: scale(1); 
+    } 
+  }
+`;
+document.head.appendChild(pulseStyle); 

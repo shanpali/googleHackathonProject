@@ -93,7 +93,63 @@ export default function Portfolio() {
     }
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+  if (loading) return (
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: '100vh',
+      gap: 2 
+    }}>
+      <Typography variant="h5" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+        {(() => {
+          const messages = [
+            "Loading your wealth portfolio...",
+            "Counting your investment treasures...",
+            "Assembling your financial empire...",
+            "Unpacking your money vault...",
+            "Calculating your net worth...",
+            "Gathering your financial assets...",
+            "Preparing your wealth dashboard...",
+            "Loading your investment kingdom...",
+            "Summoning your portfolio data...",
+            "Building your financial fortress..."
+          ];
+          return messages[Math.floor(Math.random() * messages.length)];
+        })()}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0s'
+        }} />
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0.2s'
+        }} />
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0.4s'
+        }} />
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+        Your portfolio is loading faster than your investments grow... almost
+      </Typography>
+    </Box>
+  );
   if (error) return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
   if (!data) return <Alert severity="info" sx={{ m: 2 }}>No portfolio data available.</Alert>;
 
@@ -438,4 +494,20 @@ export default function Portfolio() {
       </Card>
     </Box>
   );
-} 
+}
+
+// Add global style for pulse animation
+const pulseStyle = document.createElement('style');
+pulseStyle.innerHTML = `
+  @keyframes pulse { 
+    0%, 80%, 100% { 
+      opacity: 0.3; 
+      transform: scale(0.8); 
+    } 
+    40% { 
+      opacity: 1; 
+      transform: scale(1); 
+    } 
+  }
+`;
+document.head.appendChild(pulseStyle); 

@@ -146,6 +146,64 @@ export default function PersonalisedNews({ phone }) {
     grouped[key].push(item);
   });
 
+  if (loading) return (
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: '100vh',
+      gap: 2 
+    }}>
+      <Typography variant="h5" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+        {(() => {
+          const messages = [
+            "Fetching your personalized news...",
+            "Curating financial headlines...",
+            "Gathering market insights...",
+            "Loading your news feed...",
+            "Preparing financial updates...",
+            "Collecting market news...",
+            "Loading personalized headlines...",
+            "Gathering financial insights...",
+            "Curating your news feed...",
+            "Preparing market updates..."
+          ];
+          return messages[Math.floor(Math.random() * messages.length)];
+        })()}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0s'
+        }} />
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0.2s'
+        }} />
+        <Box sx={{ 
+          width: 10, 
+          height: 10, 
+          borderRadius: '50%', 
+          bgcolor: 'primary.main',
+          animation: 'pulse 1.4s ease-in-out infinite both',
+          animationDelay: '0.4s'
+        }} />
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+        Your news is loading faster than the market reacts to tweets... almost
+      </Typography>
+    </Box>
+  );
+
   return (
     <Box sx={{ width: '100%', maxWidth: 1100, mx: 'auto', p: { xs: 1, md: 4 }, minHeight: 600 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -241,7 +299,18 @@ export default function PersonalisedNews({ phone }) {
   );
 }
 
-// Add global style for spin animation
-const style = document.createElement('style');
-style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
-document.head.appendChild(style); 
+// Add global style for pulse animation
+const pulseStyle = document.createElement('style');
+pulseStyle.innerHTML = `
+  @keyframes pulse { 
+    0%, 80%, 100% { 
+      opacity: 0.3; 
+      transform: scale(0.8); 
+    } 
+    40% { 
+      opacity: 1; 
+      transform: scale(1); 
+    } 
+  }
+`;
+document.head.appendChild(pulseStyle); 

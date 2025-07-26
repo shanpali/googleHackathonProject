@@ -264,7 +264,56 @@ export default function Insights({ data, customInsights }) {
           </Typography>
         )}
       </Box>
-      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>}
+      {loading && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4, gap: 2 }}>
+          <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
+            {(() => {
+              const messages = [
+                "Mining financial insights...",
+                "Consulting the market oracle...",
+                "Decoding your money matrix...",
+                "Summoning financial wisdom...",
+                "Analyzing your wealth patterns...",
+                "Consulting with money gurus...",
+                "Unlocking financial secrets...",
+                "Reading the market tea leaves...",
+                "Deciphering your financial DNA...",
+                "Connecting the money dots..."
+              ];
+              return messages[Math.floor(Math.random() * messages.length)];
+            })()}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.2s'
+            }} />
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: 'primary.main',
+              animation: 'pulse 1.4s ease-in-out infinite both',
+              animationDelay: '0.4s'
+            }} />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+            AI is working harder than your financial advisor
+          </Typography>
+        </Box>
+      )}
       {error && <Alert severity="info" sx={{ mb: 2 }}>{error}</Alert>}
       {!loading && !error && insights.length === 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
