@@ -27,6 +27,7 @@ const TABS = [
   'Nominee Safeguard',
   'Reports',
   'Settings',
+  'Investment Insights',
 ];
 
 
@@ -35,20 +36,25 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Dashboard');
   const [phone, setPhone] = useState('');
+  const [globalRefreshTrigger, setGlobalRefreshTrigger] = useState(0);
 
   const handleLogin = (loginPhone) => {
     setPhone(loginPhone);
     setLoggedIn(true);
   };
 
+  const globalRefresh = () => {
+    setGlobalRefreshTrigger(prev => prev + 1);
+  };
+
   const renderContent = () => {
     switch (selectedTab) {
       case 'Dashboard':
-        return <Dashboard phone={phone} setSelectedTab={setSelectedTab} />;
+        return <Dashboard phone={phone} setSelectedTab={setSelectedTab} globalRefreshTrigger={globalRefreshTrigger} />;
       case 'Portfolio':
         return <Portfolio phone={phone} />;
       case 'Goals':
-        return <Goals />;
+        return <Goals onGoalChange={globalRefresh} />;
       case 'Tax Planning':
         return <TaxPlanning phone={phone} />;
       case 'Nominee Safeguard':
@@ -57,10 +63,10 @@ function App() {
         return <Reports phone={phone} />;
       case 'Settings':
         return <Settings phone={phone} />;
-      case 'Personalised News':
+      case 'Investment Insights':
         return <PersonalisedNews phone={phone} />;
       default:
-        return <Dashboard phone={phone} setSelectedTab={setSelectedTab} />;
+        return <Dashboard phone={phone} setSelectedTab={setSelectedTab} globalRefreshTrigger={globalRefreshTrigger} />;
     }
   };
 

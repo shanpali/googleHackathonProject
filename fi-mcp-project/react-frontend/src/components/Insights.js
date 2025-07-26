@@ -6,6 +6,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import InfoIcon from '@mui/icons-material/Info';
 import SavingsIcon from '@mui/icons-material/Savings';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 import axios from 'axios';
 
 const ICON_MAP = {
@@ -15,6 +17,102 @@ const ICON_MAP = {
   opportunity: <SavingsIcon color="success" />,
   alert: <WarningAmberIcon color="warning" />,
 };
+
+// Sentiment analysis function for insights
+function analyzeInsightSentiment(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // Negative keywords for insights
+  const negativeKeywords = [
+    'decline', 'fall', 'drop', 'loss', 'negative', 'bearish', 'crash', 'plunge', 'downturn',
+    'decrease', 'reduction', 'cut', 'slump', 'dip', 'slide', 'tumble', 'sink', 'plummet',
+    'bear market', 'recession', 'bankruptcy', 'default', 'delisting', 'penalty', 'fine',
+    'investigation', 'scandal', 'fraud', 'corruption', 'lawsuit', 'litigation', 'regulatory',
+    'warning', 'risk', 'volatile', 'uncertainty', 'concern', 'worry', 'fear', 'anxiety',
+    'drift', 'underperforming', 'deficit', 'shortfall', 'overspending', 'debt', 'liability'
+  ];
+  
+  // Positive keywords for insights
+  const positiveKeywords = [
+    'rise', 'gain', 'increase', 'growth', 'positive', 'bullish', 'rally', 'surge', 'jump',
+    'climb', 'soar', 'boost', 'improve', 'profit', 'earnings', 'revenue', 'dividend',
+    'bull market', 'expansion', 'recovery', 'upswing', 'uptrend', 'breakthrough', 'success',
+    'approval', 'launch', 'partnership', 'acquisition', 'merger', 'innovation', 'upgrade',
+    'optimistic', 'confidence', 'strong', 'robust', 'healthy', 'stable', 'opportunity',
+    'save', 'optimization', 'efficiency', 'benefit', 'advantage', 'potential'
+  ];
+  
+  let negativeScore = 0;
+  let positiveScore = 0;
+  
+  negativeKeywords.forEach(keyword => {
+    if (text.includes(keyword)) negativeScore++;
+  });
+  
+  positiveKeywords.forEach(keyword => {
+    if (text.includes(keyword)) positiveScore++;
+  });
+  
+  // Determine sentiment
+  if (negativeScore > positiveScore) return 'negative';
+  if (positiveScore > negativeScore) return 'positive';
+  return 'neutral';
+}
+
+// Get sentiment styling for insights
+function getInsightSentimentStyle(sentiment, priority) {
+  const baseStyle = {
+    borderRadius: 3,
+    mb: 2,
+    transition: 'all 0.3s ease',
+    '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 }
+  };
+  
+  switch (sentiment) {
+    case 'positive':
+      return {
+        ...baseStyle,
+        borderLeft: '4px solid #4caf50',
+        background: 'linear-gradient(135deg, #f1f8e9 0%, #ffffff 100%)',
+        '&:hover': { 
+          ...baseStyle['&:hover'],
+          boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)' 
+        }
+      };
+    case 'negative':
+      return {
+        ...baseStyle,
+        borderLeft: '4px solid #f44336',
+        background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)',
+        '&:hover': { 
+          ...baseStyle['&:hover'],
+          boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)' 
+        }
+      };
+    default:
+      return {
+        ...baseStyle,
+        borderLeft: `4px solid ${priority?.toLowerCase().includes('high') ? '#f44336' : priority?.toLowerCase().includes('medium') ? '#ff9800' : priority?.toLowerCase().includes('opportunity') ? '#4caf50' : '#2196f3'}`,
+        background: 'linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)',
+        '&:hover': { 
+          ...baseStyle['&:hover'],
+          boxShadow: '0 4px 12px rgba(158, 158, 158, 0.3)' 
+        }
+      };
+  }
+}
+
+// Get sentiment icon for insights
+function getInsightSentimentIcon(sentiment) {
+  switch (sentiment) {
+    case 'positive':
+      return <TrendingUpIcon sx={{ color: '#4caf50', fontSize: 20 }} />;
+    case 'negative':
+      return <TrendingDownIcon sx={{ color: '#f44336', fontSize: 20 }} />;
+    default:
+      return <TrendingFlatIcon sx={{ color: '#9e9e9e', fontSize: 20 }} />;
+  }
+}
 
 const fallbackInsights = [
   {
@@ -56,10 +154,16 @@ export default function Insights({ data, customInsights }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     if (customInsights) {
-      setInsights(customInsights);
+      // Add sentiment analysis to custom insights
+      const insightsWithSentiment = customInsights.map(insight => ({
+        ...insight,
+        sentiment: analyzeInsightSentiment(insight.title, insight.description)
+      }));
+      setInsights(insightsWithSentiment);
       setLoading(false);
       setError(null);
       return;
@@ -70,15 +174,24 @@ export default function Insights({ data, customInsights }) {
     axios.get('/insights', { withCredentials: true })
       .then(res => {
         if (mounted && res.data && Array.isArray(res.data.insights)) {
-          setInsights(res.data.insights);
+          // Add sentiment analysis to fetched insights
+          const insightsWithSentiment = res.data.insights.map(insight => ({
+            ...insight,
+            sentiment: analyzeInsightSentiment(insight.title, insight.description)
+          }));
+          setInsights(insightsWithSentiment);
+          setLastUpdated(res.data.last_updated);
         } else if (mounted) {
-          setError('No insights found.');
-          setInsights(fallbackInsights);
+          // No insights found in database
+          setInsights([]);
+          setError('No insights available. Click refresh to generate personalized insights.');
         }
       })
       .catch(err => {
-        setError('Could not fetch insights. Showing sample insights.');
-        setInsights(fallbackInsights);
+        if (mounted) {
+          setInsights([]);
+          setError('Could not fetch insights. Click refresh to try again.');
+        }
       })
       .finally(() => setLoading(false));
     return () => { mounted = false; };
@@ -91,14 +204,22 @@ export default function Insights({ data, customInsights }) {
     setError(null);
     axios.get('/insights?refresh=true', { withCredentials: true })
       .then(res => {
-        if (res.data && Array.isArray(res.data.insights)) {
-          setInsights(res.data.insights);
+        if (res.data && Array.isArray(res.data.insights) && res.data.insights.length > 0) {
+          const insightsWithSentiment = res.data.insights.map(insight => ({
+            ...insight,
+            sentiment: analyzeInsightSentiment(insight.title, insight.description)
+          }));
+          setInsights(insightsWithSentiment);
+          setLastUpdated(res.data.last_updated);
+          setError(null);
         } else {
-          setError('No insights found.');
+          setInsights([]);
+          setError('No insights generated. Please try again.');
         }
       })
       .catch(() => {
-        setError('Could not refresh insights.');
+        setInsights([]);
+        setError('Could not refresh insights. Please try again.');
       })
       .finally(() => setRefreshing(false));
   };
@@ -129,14 +250,41 @@ export default function Insights({ data, customInsights }) {
           </span>
         </Tooltip>
         {refreshing && <Typography variant="body2" color="primary" ml={1}>Refreshing...</Typography>}
+        {lastUpdated && (
+          <Typography variant="body2" color="text.secondary" ml={1}>
+            Last updated: {new Date(lastUpdated).toLocaleString('en-IN', { 
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })}
+          </Typography>
+        )}
       </Box>
       {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>}
-      {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="info" sx={{ mb: 2 }}>{error}</Alert>}
+      {!loading && !error && insights.length === 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No insights available. Click the refresh button above to generate personalized insights based on your financial data.
+        </Alert>
+      )}
       <Grid container spacing={2}>
         {insights.map((item, idx) => (
           <Grid item xs={12} sm={6} md={6} key={item.title + idx}>
-            <Card sx={{ borderLeft: `4px solid`, borderColor: `${item.priority?.toLowerCase().includes('high') ? 'error.main' : item.priority?.toLowerCase().includes('medium') ? 'warning.main' : item.priority?.toLowerCase().includes('opportunity') ? 'success.main' : 'info.main'}`, borderRadius: 3, mb: 2 }}>
+            <Card sx={getInsightSentimentStyle(item.sentiment, item.priority)}>
               <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  {getInsightSentimentIcon(item.sentiment)}
+                  <Chip 
+                    label={item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1)} 
+                    size="small" 
+                    color={item.sentiment === 'positive' ? 'success' : item.sentiment === 'negative' ? 'error' : 'default'}
+                    variant="outlined"
+                  />
+                </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {ICON_MAP[item.icon] || <InfoIcon color="info" />}
                   <Typography variant="subtitle1" fontWeight={700}>{item.title}</Typography>

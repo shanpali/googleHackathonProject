@@ -8,6 +8,7 @@ export default function HealthScore({ data }) {
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchHealthScore = (refresh = false) => {
     setLoading(true);
@@ -17,6 +18,7 @@ export default function HealthScore({ data }) {
         if (res.data && typeof res.data.score === 'number' && Array.isArray(res.data.metrics)) {
           setScore(res.data.score);
           setMetrics(res.data.metrics);
+          setLastUpdated(res.data.last_updated);
         } else {
           setError('No health score found.');
         }
@@ -36,14 +38,29 @@ export default function HealthScore({ data }) {
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" fontWeight={700}>Financial Health Score</Typography>
-          <IconButton 
-            onClick={() => fetchHealthScore(true)} 
-            disabled={loading}
-            size="small"
-            sx={{ color: '#1976d2' }}
-          >
-            <RefreshIcon />
-          </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {lastUpdated && (
+              <Typography variant="body2" color="text.secondary">
+                Last updated: {new Date(lastUpdated).toLocaleString('en-IN', { 
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: true
+                })}
+              </Typography>
+            )}
+            <IconButton 
+              onClick={() => fetchHealthScore(true)} 
+              disabled={loading}
+              size="small"
+              sx={{ color: '#1976d2' }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Box>
         </Box>
         {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}><CircularProgress /></Box>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

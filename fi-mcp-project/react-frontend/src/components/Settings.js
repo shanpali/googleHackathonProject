@@ -53,6 +53,9 @@ export default function Settings() {
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [profileSuccess, setProfileSuccess] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -77,12 +80,14 @@ export default function Settings() {
   });
 
   const [profile, setProfile] = useState({
-    name: 'Rahul Sharma',
-    email: 'rahul.sharma@email.com',
-    phone: '+91 98765 43210',
-    address: 'Mumbai, Maharashtra',
-    occupation: 'Software Engineer',
-    company: 'Tech Solutions Ltd.'
+    name: 'User',
+    email: '',
+    date_of_birth: '',
+    occupation: '',
+    address: '',
+    emergency_contact: '',
+    risk_profile: 'Moderate',
+    investment_goals: ''
   });
 
   useEffect(() => {
@@ -96,7 +101,16 @@ export default function Settings() {
         setLoading(false);
       }
     };
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get('/profile', { withCredentials: true });
+        setProfile(res.data);
+      } catch (err) {
+        setProfileError('Could not load profile data.');
+      }
+    };
     fetchData();
+    fetchProfile();
   }, []);
 
   const handleSettingChange = (category, setting) => (event) => {
@@ -114,6 +128,27 @@ export default function Settings() {
       ...prev,
       [field]: event.target.value
     }));
+  };
+
+  const handleProfileSave = async () => {
+    setProfileLoading(true);
+    setProfileError(null);
+    setProfileSuccess(false);
+    try {
+      const res = await axios.put('/profile', profile, { withCredentials: true });
+      if (res.data.success) {
+        setProfileSuccess(true);
+        // Trigger a custom event to notify other components
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: res.data.profile }));
+        // Clear success message after 3 seconds
+        setTimeout(() => setProfileSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Profile save error:', err.response?.data || err.message);
+      setProfileError(`Could not save profile changes: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleTabChange = (event, newValue) => {
@@ -141,7 +176,6 @@ export default function Settings() {
               <Typography variant="body1" color="text.secondary">{profile.occupation} at {profile.company}</Typography>
               <Typography variant="body2" color="text.secondary">{profile.email}</Typography>
             </Box>
-            <Chip label="Gold Member" color="warning" sx={{ fontWeight: 700 }} />
           </Box>
         </CardContent>
       </Card>
@@ -157,6 +191,8 @@ export default function Settings() {
           </Tabs>
 
           <TabPanel value={tabValue} index={0}>
+            {profileError && <Alert severity="error" sx={{ mb: 2 }}>{profileError}</Alert>}
+            {profileSuccess && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" fontWeight={700} mb={3}>Personal Information</Typography>
@@ -168,13 +204,14 @@ export default function Settings() {
                       value={profile.name}
                       onChange={handleProfileChange('name')}
                       variant="outlined"
+                      required
                     />
                   </Grid>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
                       label="Email"
-                      value={profile.email}
+                      value={profile.email || ''}
                       onChange={handleProfileChange('email')}
                       variant="outlined"
                       type="email"
@@ -183,9 +220,20 @@ export default function Settings() {
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Phone Number"
-                      value={profile.phone}
-                      onChange={handleProfileChange('phone')}
+                      label="Date of Birth"
+                      value={profile.date_of_birth || ''}
+                      onChange={handleProfileChange('date_of_birth')}
+                      variant="outlined"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Occupation"
+                      value={profile.occupation || ''}
+                      onChange={handleProfileChange('occupation')}
                       variant="outlined"
                     />
                   </Grid>
@@ -193,37 +241,61 @@ export default function Settings() {
                     <TextField
                       fullWidth
                       label="Address"
-                      value={profile.address}
+                      value={profile.address || ''}
                       onChange={handleProfileChange('address')}
                       variant="outlined"
                       multiline
                       rows={2}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Occupation"
-                      value={profile.occupation}
-                      onChange={handleProfileChange('occupation')}
+                      label="Emergency Contact"
+                      value={profile.emergency_contact || ''}
+                      onChange={handleProfileChange('emergency_contact')}
                       variant="outlined"
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Company"
-                      value={profile.company}
-                      onChange={handleProfileChange('company')}
+                      label="Risk Profile"
+                      value={profile.risk_profile || 'Moderate'}
+                      onChange={handleProfileChange('risk_profile')}
                       variant="outlined"
+                      select
+                      SelectProps={{ native: true }}
+                    >
+                      <option value="Conservative">Conservative</option>
+                      <option value="Moderate">Moderate</option>
+                      <option value="Aggressive">Aggressive</option>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Investment Goals"
+                      value={profile.investment_goals || ''}
+                      onChange={handleProfileChange('investment_goals')}
+                      variant="outlined"
+                      multiline
+                      rows={3}
+                      placeholder="Describe your investment goals..."
                     />
                   </Grid>
                 </Grid>
                 <Box sx={{ mt: 3 }}>
-                  <Button variant="contained" color="primary" sx={{ mr: 2 }}>
-                    Save Changes
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    sx={{ mr: 2 }}
+                    onClick={handleProfileSave}
+                    disabled={profileLoading}
+                  >
+                    {profileLoading ? 'Saving...' : 'Save Changes'}
                   </Button>
-                  <Button variant="outlined">
+                  <Button variant="outlined" disabled={profileLoading}>
                     Cancel
                   </Button>
                 </Box>

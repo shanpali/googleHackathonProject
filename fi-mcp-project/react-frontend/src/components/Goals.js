@@ -25,7 +25,7 @@ const ICON_MAP = {
   alert: <WarningAmberIcon color="warning" />,
 };
 
-export default function Goals() {
+export default function Goals({ onGoalChange }) {
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -73,6 +73,10 @@ export default function Goals() {
   const saveGoalsToDB = async (newGoals) => {
     try {
       await axios.post('/goals', { goals: newGoals }, { withCredentials: true });
+      // Trigger global refresh when goals change
+      if (onGoalChange) {
+        onGoalChange();
+      }
     } catch (err) {
       setError('Could not save goals.');
     }
@@ -159,7 +163,6 @@ export default function Goals() {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}><CircularProgress size={40} /></Box>
       ) : filteredGoals.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8, mb: 6 }}>
-          <img src="https://assets10.lottiefiles.com/packages/lf20_2ks3pjua.json" alt="No goals" width={180} style={{ marginBottom: 16 }} />
           <Typography variant="h6" color="text.secondary" mb={2}>No goals yet. Click <b>Add Goal</b> to get started!</Typography>
         </Box>
       ) : (
@@ -265,7 +268,7 @@ export default function Goals() {
       {errorGoalInsights && (
         <Alert severity="error" sx={{ mb: 2 }}>{errorGoalInsights}</Alert>
       )}
-      {goalInsights && Array.isArray(goalInsights) && goalInsights.length > 0 && (
+      {goals.length > 0 && goalInsights && Array.isArray(goalInsights) && goalInsights.length > 0 && (
         <Card sx={{ borderRadius: 3, mb: 3, background: '#f3f7fa' }}>
           <CardContent>
             <Typography variant="subtitle1" fontWeight={700} mb={2} color="secondary">Goal-Based Insights & Alerts</Typography>

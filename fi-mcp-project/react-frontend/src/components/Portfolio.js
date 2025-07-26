@@ -20,12 +20,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  IconButton
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
 function TabPanel({ children, value, index, ...other }) {
@@ -47,6 +49,9 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tabValue, setTabValue] = useState(0);
+  const [cashAssets, setCashAssets] = useState([]);
+  const [loadingCash, setLoadingCash] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +66,32 @@ export default function Portfolio() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    fetchCashAssets();
+  }, []);
+
+  const fetchCashAssets = async () => {
+    setLoadingCash(true);
+    try {
+      const res = await axios.get('/cash-asset', { withCredentials: true });
+      setCashAssets(res.data.assets || []);
+    } catch {
+      setCashAssets([]);
+    } finally {
+      setLoadingCash(false);
+    }
+  };
+
+  const handleDeleteCash = async (id) => {
+    setDeletingId(id);
+    try {
+      await axios.delete('/cash-asset', { data: { id }, withCredentials: true });
+      fetchCashAssets();
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
   if (error) return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
@@ -104,12 +135,14 @@ export default function Portfolio() {
   const totalMFValue = mfData.reduce((sum, fund) => sum + (fund.currentValue || 0), 0);
   const totalStockValue = stockData.reduce((sum, stock) => sum + (stock.currentValue || 0), 0);
   const epfValue = epfData.currentBalance || 0;
+  const totalCashValue = cashAssets.reduce((sum, asset) => sum + (Number(asset.amount) || 0), 0);
 
   const portfolioBreakdown = [
     { name: 'Mutual Funds', value: totalMFValue, percentage: (totalMFValue / netWorth) * 100, color: '#1976d2' },
     { name: 'Stocks & ETFs', value: totalStockValue, percentage: (totalStockValue / netWorth) * 100, color: '#388e3c' },
     { name: 'EPF', value: epfValue, percentage: (epfValue / netWorth) * 100, color: '#f57c00' },
-    { name: 'Savings', value: netWorth - totalMFValue - totalStockValue - epfValue, percentage: ((netWorth - totalMFValue - totalStockValue - epfValue) / netWorth) * 100, color: '#7b1fa2' }
+    { name: 'Extra Assets', value: totalCashValue, percentage: (totalCashValue / netWorth) * 100, color: '#9c27b0' },
+    { name: 'Savings', value: netWorth - totalMFValue - totalStockValue - epfValue - totalCashValue, percentage: ((netWorth - totalMFValue - totalStockValue - epfValue - totalCashValue) / netWorth) * 100, color: '#7b1fa2' }
   ];
 
   const handleTabChange = (event, newValue) => {
@@ -119,12 +152,12 @@ export default function Portfolio() {
   return (
     <Box sx={{ flexGrow: 1, p: 4 }}>
       <Typography variant="h4" fontWeight={700} mb={3} color="primary">
-        📊 Investment Portfolio
+        📊 Portfolio
       </Typography>
 
       {/* Portfolio Overview */}
       <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
             <CardContent>
               <Typography variant="h6" mb={1}>Total Portfolio Value</Typography>
@@ -133,7 +166,7 @@ export default function Portfolio() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)', color: 'white' }}>
             <CardContent>
               <Typography variant="h6" mb={1}>Total Investments</Typography>
@@ -142,11 +175,20 @@ export default function Portfolio() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #f57c00 0%, #ff9800 100%)', color: 'white' }}>
             <CardContent>
+              <Typography variant="h6" mb={1}>Extra Assets</Typography>
+              <Typography variant="h4" fontWeight={700}>₹{totalCashValue.toLocaleString()}</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Extra assets</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #7b1fa2 0%, #ab47bc 100%)', color: 'white' }}>
+            <CardContent>
               <Typography variant="h6" mb={1}>Liquid Savings</Typography>
-              <Typography variant="h4" fontWeight={700}>₹{(netWorth - totalMFValue - totalStockValue - epfValue).toLocaleString()}</Typography>
+              <Typography variant="h4" fontWeight={700}>₹{(netWorth - totalMFValue - totalStockValue - epfValue - totalCashValue).toLocaleString()}</Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>Available for emergencies</Typography>
             </CardContent>
           </Card>
@@ -186,6 +228,7 @@ export default function Portfolio() {
             <Tab label="Mutual Funds" />
             <Tab label="Stocks & ETFs" />
             <Tab label="EPF Details" />
+            <Tab label="Extra Assets" />
           </Tabs>
 
           <TabPanel value={tabValue} index={0}>
@@ -333,6 +376,63 @@ export default function Portfolio() {
                 </Card>
               </Grid>
             </Grid>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={3}>
+            <Box>
+              <Typography variant="h6" fontWeight={700} mb={3}>Extra Assets Details</Typography>
+              {loadingCash ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : cashAssets.length === 0 ? (
+                <Alert severity="info">
+                  No extra assets found. Add extra assets from the dashboard to see them here.
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell><strong>Description</strong></TableCell>
+                        <TableCell><strong>Amount</strong></TableCell>
+                        <TableCell><strong>Added Date</strong></TableCell>
+                        <TableCell><strong>Actions</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {cashAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>{asset.description || 'No description'}</TableCell>
+                          <TableCell>
+                            <Typography variant="h6" fontWeight={700} color="primary">
+                              ₹{Number(asset.amount).toLocaleString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{new Date(asset.timestamp).toLocaleString('en-IN', { 
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })}</TableCell>
+                          <TableCell>
+                            <IconButton 
+                              onClick={() => handleDeleteCash(asset.id)}
+                              disabled={deletingId === asset.id}
+                              color="error"
+                            >
+                              {deletingId === asset.id ? <CircularProgress size={20} /> : <DeleteIcon />}
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
           </TabPanel>
         </CardContent>
       </Card>

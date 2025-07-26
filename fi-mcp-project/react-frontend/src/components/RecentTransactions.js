@@ -26,11 +26,11 @@ function getRecentTransactions(data, cashAssets) {
     cashAssets.forEach(asset => {
       allTxns.push({
         amount: asset.amount,
-        description: asset.description || 'Cash Asset Added',
+        description: asset.description || 'Extra Asset Added',
         date: asset.timestamp ? new Date(asset.timestamp).toISOString().slice(0, 10) : '',
         txnType: 1,
         category: 'Credit',
-        account: 'Cash',
+        account: 'Extra Asset',
         balance: asset.amount
       });
     });
@@ -58,13 +58,15 @@ function getCategoryFromNarration(narration, txnType, mode) {
   return 'Other';
 }
 
-export default function RecentTransactions({ data }) {
+export default function RecentTransactions({ data, refreshTrigger }) {
   const [cashAssets, setCashAssets] = useState([]);
+
   useEffect(() => {
     axios.get('/cash-asset', { withCredentials: true }).then(res => {
       setCashAssets(res.data.assets || []);
     }).catch(() => setCashAssets([]));
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger to dependency array
+
   const txns = getRecentTransactions(data, cashAssets);
   return (
     <Card sx={{ borderRadius: 3, mt: 4 }}>

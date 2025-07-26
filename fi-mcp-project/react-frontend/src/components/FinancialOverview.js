@@ -8,7 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
-export default function FinancialOverview({ data, onNetWorthClick }) {
+export default function FinancialOverview({ data, onNetWorthClick, onAssetAdded }) {
   const [cashAssets, setCashAssets] = useState([]);
   const [loadingCash, setLoadingCash] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -42,6 +42,10 @@ export default function FinancialOverview({ data, onNetWorthClick }) {
       setCashAmount('');
       setCashDesc('');
       fetchCashAssets();
+      // Trigger refresh of parent components
+      if (onAssetAdded) {
+        onAssetAdded();
+      }
     } finally {
       setAdding(false);
     }
@@ -76,48 +80,72 @@ export default function FinancialOverview({ data, onNetWorthClick }) {
 
   return (
     <>
-      <Grid container spacing={2} columns={12} alignItems="center">
+      <Grid container spacing={0} columns={12} alignItems="stretch" sx={{ width: '100%' }}>
         {cards.map((item, idx) => {
           const isNetWorth = item.label === 'Total Net Worth';
           return (
-            <Box key={item.label} sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' }, display: 'flex' }}>
+            <Box key={item.label} sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2.4' }, display: 'flex', px: 1 }}>
               <Card
                 sx={{
                   borderRadius: 3,
                   boxShadow: 0,
                   flex: 1,
+                  height: 140,
+                  display: 'flex',
+                  flexDirection: 'column',
                   cursor: isNetWorth && onNetWorthClick ? 'pointer' : 'default',
                   transition: 'box-shadow 0.2s',
                   '&:hover': isNetWorth && onNetWorthClick ? { boxShadow: 6, background: '#e3f2fd' } : {},
                 }}
                 onClick={isNetWorth && onNetWorthClick ? onNetWorthClick : undefined}
               >
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     {item.icon}
                     <Typography variant="subtitle2" color="text.secondary">{item.label}</Typography>
                   </Box>
-                  <Typography variant="h6" fontWeight={700}>{item.value}</Typography>
-                  {item.change && (
-                    <Typography variant="body2" color={item.change.startsWith('+') ? 'green' : 'red'}>
-                      {item.change}
-                    </Typography>
-                  )}
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>{item.value}</Typography>
+                    {item.change && (
+                      <Typography variant="body2" color={item.change.startsWith('+') ? 'green' : 'red'}>
+                        {item.change}
+                      </Typography>
+                    )}
+                  </Box>
                 </CardContent>
               </Card>
             </Box>
           );
         })}
-        <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' }, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
-          <Tooltip title="Add Cash Asset">
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setAddOpen(true)} sx={{ fontWeight: 700, borderRadius: 2 }}>
-              Add Cash
-            </Button>
-          </Tooltip>
+        <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2.4' }, display: 'flex', alignItems: 'stretch', px: 1 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: 0,
+              flex: 1,
+              height: 140,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              cursor: 'pointer',
+              transition: 'box-shadow 0.2s',
+              '&:hover': { boxShadow: 6, background: '#e3f2fd' },
+            }}
+            onClick={() => setAddOpen(true)}
+          >
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <Tooltip title="Add Extra Asset">
+                <Button variant="outlined" startIcon={<AddIcon />} sx={{ fontWeight: 700, borderRadius: 2 }}>
+                  Add Extra Asset
+                </Button>
+              </Tooltip>
+            </CardContent>
+          </Card>
         </Box>
       </Grid>
       <Dialog open={addOpen} onClose={() => setAddOpen(false)}>
-        <DialogTitle>Add Cash Asset</DialogTitle>
+        <DialogTitle>Add Extra Asset</DialogTitle>
         <DialogContent>
           <TextField
             label="Amount"
@@ -142,7 +170,7 @@ export default function FinancialOverview({ data, onNetWorthClick }) {
           </Button>
         </DialogActions>
       </Dialog>
-      <Box sx={{ mt: 2 }}>
+      {/* <Box sx={{ mt: 2 }}>
         <Typography variant="subtitle1" fontWeight={700} mb={1}>Cash Assets</Typography>
         {loadingCash ? <CircularProgress size={24} /> : (
           <List dense>
@@ -157,13 +185,20 @@ export default function FinancialOverview({ data, onNetWorthClick }) {
                   primary={<>
                     <b>₹{Number(asset.amount).toLocaleString()}</b> <span style={{ color: '#888', marginLeft: 8 }}>{asset.description}</span>
                   </>}
-                  secondary={new Date(asset.timestamp).toLocaleString()}
+                  secondary={new Date(asset.timestamp).toLocaleString('en-IN', { 
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
                 />
               </ListItem>
             ))}
           </List>
         )}
-      </Box>
+      </Box> */}
     </>
   );
 } 

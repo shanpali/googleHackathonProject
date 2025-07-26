@@ -35,7 +35,7 @@ function getGreeting() {
   return 'Good Evening';
 }
 
-export default function Dashboard({ phone, setSelectedTab }) {
+export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFab, setShowFab] = useState(false);
@@ -47,6 +47,25 @@ export default function Dashboard({ phone, setSelectedTab }) {
   const [goalBasedInsights, setGoalBasedInsights] = useState([]);
   const [goals, setGoals] = useState([]);
   const [loadingExport, setLoadingExport] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [localGlobalRefreshTrigger, setLocalGlobalRefreshTrigger] = useState(0);
+  const [userProfile, setUserProfile] = useState({ name: 'User' });
+
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const globalRefresh = () => {
+    setLocalGlobalRefreshTrigger(prev => prev + 1);
+    // Also refresh financial data
+    axios.get('/financial-data', { withCredentials: true })
+      .then(res => {
+        setData(res.data);
+      })
+      .catch(() => {
+        // Silently fail
+      });
+  };
 
   useEffect(() => {
     axios.get('/financial-data', { withCredentials: true })
@@ -55,10 +74,32 @@ export default function Dashboard({ phone, setSelectedTab }) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+    
+    // Fetch user profile
+    axios.get('/profile', { withCredentials: true })
+      .then(res => {
+        setUserProfile(res.data);
+      })
+      .catch(() => {
+        // Silently fail, use default name
+      });
+    
     // Show FAB after mount for animation
     setTimeout(() => setShowFab(true), 800);
     // Fetch all exportable data
     fetchAllExportData();
+  }, [localGlobalRefreshTrigger, globalRefreshTrigger]); // Add both triggers as dependencies
+
+  // Listen for profile updates
+  useEffect(() => {
+    const handleProfileUpdate = (event) => {
+      setUserProfile(event.detail);
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   // Load cached goal insights on mount
@@ -158,7 +199,7 @@ export default function Dashboard({ phone, setSelectedTab }) {
         />
         <Box>
           <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: 1, mb: 0.5 }}>
-            {getGreeting()}, Rahul
+            {getGreeting()}, {userProfile.name}
             {phone && (
               <Typography component="span" variant="h6" sx={{ ml: 2, fontWeight: 400, color: '#fff', opacity: 0.85 }}>
                 ({phone})
@@ -167,14 +208,14 @@ export default function Dashboard({ phone, setSelectedTab }) {
             <StarIcon sx={{ fontSize: 28, color: '#ffd600', verticalAlign: 'middle', ml: 1 }} />
           </Typography>
           <Typography variant="h6" sx={{ opacity: 0.92, fontWeight: 400 }}>
-            Your personalized financial dashboard for <b>May 2023</b>
+            Your personalized financial dashboard for <b>{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</b>
           </Typography>
-          <Chip
+          {/* <Chip
             icon={<EmojiEventsIcon />}
             label="Gold Member"
             color="warning"
             sx={{ mt: 1, fontWeight: 700, fontSize: 16, px: 2, borderRadius: 2, background: 'rgba(255, 214, 0, 0.15)' }}
-          />
+          /> */}
         </Box>
         <Box sx={{ flexGrow: 1 }} />
         <Fade in={true} timeout={1200}>
@@ -208,7 +249,7 @@ export default function Dashboard({ phone, setSelectedTab }) {
       {/* Main Dashboard Content */}
       <Grid container spacing={3} columns={12} mt={2}>
         <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 8' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <FinancialOverview data={data} animate onNetWorthClick={() => setSelectedTab && setSelectedTab('Portfolio')} />
+          <FinancialOverview data={data} animate onNetWorthClick={() => setSelectedTab && setSelectedTab('Portfolio')} onAssetAdded={globalRefresh} />
           <AssetAllocation data={data} />
           <Insights data={data} />
         </Box>
@@ -217,7 +258,7 @@ export default function Dashboard({ phone, setSelectedTab }) {
           <NomineeSafeguard data={data} />
         </Box>
       </Grid>
-      <RecentTransactions data={data} />
+      <RecentTransactions data={data} refreshTrigger={refreshTrigger} />
 
       {/* Floating Action Button for Chatbot */}
       <Fade in={showFab} timeout={1200}>
