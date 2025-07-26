@@ -1,0 +1,7 @@
+{
+    "mcpServers": {
+        "fi_mcp": {
+            "url": "http://localhost:8484/mcp/stream"
+        }
+    }
+}

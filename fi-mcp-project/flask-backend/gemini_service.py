@@ -38,14 +38,23 @@ class GeminiService:
         if self.tool_registry.has_function(function_name):
             return self.tool_registry.execute_function(function_name, **function_args)
         else:
-            # For demo purposes, return a mock result
-            logger.info(f"Mock execution of {function_name} with args: {function_args}")
-            return {
-                "success": True, 
-                "result": f"Mock execution of {function_name} completed successfully",
-                "function": function_name,
-                "args": function_args
-            }
+            # Try to execute as MCP tool if available
+            try:
+                from mcp_client import get_mcp_client
+                import asyncio
+                mcp_client = get_mcp_client()
+                # Run the async MCP tool execution synchronously
+                result = asyncio.run(mcp_client.execute_tool_for_gemini(function_name, function_args))
+                return result
+            except Exception as e:
+                logger.info(f"Mock execution of {function_name} with args: {function_args}")
+                logger.error(f"Error executing MCP tool {function_name}: {str(e)}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "function": function_name,
+                    "args": function_args
+                }
     
     def generate_content_with_user_context(
         self,
@@ -112,6 +121,7 @@ class GeminiService:
         Returns:
             Dict containing the response and any function calls
         """
+        logger.info(f"user_content: {user_content}\ncustom_tools: {custom_tools}\nuser_context: {user_context}")
         try:
             # Use default system instruction if none provided
             if system_instruction is None:
@@ -157,16 +167,34 @@ class GeminiService:
                 "function_calls": [],
                 "raw_response": response
             }
-            
+
             # Handle function calls if present
+            function_call_results = []
             if response.candidates and len(response.candidates) > 0:
                 candidate = response.candidates[0]
                 if candidate.content and candidate.content.parts:
                     for part in candidate.content.parts:
                         if hasattr(part, 'function_call') and part.function_call:
                             function_result = self._execute_function_call(part.function_call)
-                            result["function_calls"].append(function_result)
-            
+                            function_call_results.append(function_result)
+            result["function_calls"] = function_call_results
+
+
+            # If response.text is None or empty, but we have function_call results, send the result to Gemini for further processing
+            if (not response.text or response.text.strip() == "") and function_call_results:
+                fc = function_call_results[0]
+                # Prepare a follow-up prompt for Gemini
+                followup_prompt = f"Here is the result: {fc.get('message') or fc.get('result') or str(fc)}. Please summarize or explain this for the user."
+                # Call Gemini again with the follow-up prompt
+                followup_response = self.client.models.generate_content(
+                    model=model,
+                    contents=followup_prompt,
+                    config=types.GenerateContentConfig(system_instruction=system_instruction)
+                )
+                # Use Gemini's processed response as the chat output
+                result["text"] = followup_response.text
+                result["raw_followup_response"] = followup_response
+
             return result
             
         except Exception as e:

@@ -1,16 +1,26 @@
 from flask import Flask, request, jsonify, session, send_from_directory, abort
+
+from flask import Flask, session, request, jsonify
 from flask_cors import CORS
 import requests
 import os
 import json
+import logging
+import asyncio
 from config import Config
 from gemini_service import get_gemini_service
+from mcp_client import MCPClient, get_mcp_client
 from function_implementations import (
     schedule_reminder,
     generate_financial_report,
     set_financial_goal,
     create_investment_alert
 )
+
+CHAT_HISTORY_STORE = {}
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = Config.FLASK_SECRET_KEY
@@ -43,6 +53,35 @@ def login():
     phone = request.json.get('phone')
     session['phone'] = phone
     return jsonify({'success': True})
+
+@app.route('/mcp-auth-callback', methods=['POST'])
+def mcp_auth_callback():
+    """Handle MCP authentication completion callback"""
+    try:
+        session_id = request.json.get('session_id')
+        server_name = request.json.get('server_name', 'fi_mcp')  # default to fi_mcp
+        
+        if not session_id:
+            return jsonify({'error': 'Session ID is required'}), 400
+        
+        # Mark the session as authenticated
+        mcp_client = get_mcp_client()
+        result = mcp_client.mark_session_authenticated(server_name, session_id)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': 'Authentication completed successfully',
+                'session_id': session_id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Authentication failed')
+            }), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'Authentication callback failed: {str(e)}'}), 500
 
 @app.route('/financial-data', methods=['GET'])
 def financial_data():
@@ -126,9 +165,11 @@ def chatbot():
             user_data[endpoint] = None
 
     # Maintain conversation history in session
-    if 'chat_history' not in session:
-        session['chat_history'] = []
-    chat_history = session['chat_history']
+    # Maintain conversation history in in-memory store
+    user_id = session.get('phone') or request.remote_addr  # Use phone or IP as key
+    if user_id not in CHAT_HISTORY_STORE:
+        CHAT_HISTORY_STORE[user_id] = []
+    chat_history = CHAT_HISTORY_STORE[user_id]
     
     # Add the new user message
     chat_history.append({'role': 'user', 'text': user_message})
@@ -150,14 +191,15 @@ def chatbot():
             user_content=full_user_content,
             phone=phone,  # Pass phone for context loading
             financial_data=user_data,
-            include_tools=True
+            include_tools=True,
+            custom_tools=get_mcp_client().get_tools_for_gemini()
         )
         
         assistant_response = response.get('text', 'I apologize, but I encountered an error processing your request.')
         
         # Add Gemini's response to history
         chat_history.append({'role': 'assistant', 'text': assistant_response})
-        session['chat_history'] = chat_history
+        CHAT_HISTORY_STORE[user_id] = chat_history
         
         return jsonify({
             "response": assistant_response,
@@ -182,5 +224,41 @@ def serve_mock_data(filename):
 
     return send_from_directory(user_dir, f"{filename}.json")
 
+@app.route('/call-function', methods=['POST'])
+def execute_function_directly():
+    #phone = session.get('phone')
+    #if not phone:
+    #    return jsonify({'error': 'Not logged in'}), 401
+
+    function = request.json.get('function')
+    args = request.json.get('args')
+    if not function:
+        return jsonify({'error': 'No function provided'}), 400
+    logger.debug("got here: before mcp")
+    try:
+        mcp_client = get_mcp_client()  # Use singleton
+        logger.debug("got here: got mcp client")
+        result = asyncio.run(mcp_client.execute_tool_for_gemini(function_name=function, arguments=args))
+        logger.debug(f"result: {result}")
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Function call failed: {str(e)}'}), 500
+
+@app.route('/available-tools', methods=['GET'])
+def available_tools():
+    try:
+        mcp_client = get_mcp_client()
+        tools = mcp_client.get_tools_for_gemini()
+        return jsonify({
+            "tools": tools,
+            "success": True
+        })
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to fetch available tools: {str(e)}",
+            "success": False
+        }), 500
+
 if __name__ == '__main__':
     app.run(port=Config.FLASK_PORT, debug=Config.FLASK_DEBUG) 
+
