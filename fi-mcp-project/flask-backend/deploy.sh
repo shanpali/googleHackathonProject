@@ -15,10 +15,9 @@ gcloud config set project $PROJECT_ID
 # Authenticate Docker with Artifact Registry
 gcloud auth configure-docker $REGION-docker.pkg.dev
 
-# Create a buildx builder if not already created
+# Build and push the unified image for linux/amd64
 podman build --arch amd64 -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$TAG .
 
-# Build and push the image for linux/amd64
 podman push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$TAG
 
 # Deploy to Cloud Run

@@ -2826,5 +2826,16 @@ def test_authenticated_fi_mcp():
             'message': str(e)
         }), 500
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    # Use Flask's default static folder
+    static_dir = app.static_folder
+    file_path = os.path.join(static_dir, path)
+    if path != "" and os.path.exists(file_path):
+        return send_from_directory(static_dir, path)
+    else:
+        return send_from_directory(static_dir, 'index.html')
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 8080))) 
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 8080)))
