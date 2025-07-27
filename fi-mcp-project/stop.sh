@@ -37,6 +37,9 @@ kill_by_port() {
     fi
 }
 
+# Stop FI-MCP server (port 8484)
+kill_by_port 8484 "FI-MCP Server"
+
 # Stop Flask backend (default port 5001)
 kill_by_port 5001 "Flask Backend"
 
@@ -46,6 +49,10 @@ kill_by_port 3000 "React Frontend"
 # Also check for any remaining Python processes from our app
 echo -e "${YELLOW}🔍 Cleaning up any remaining Python processes...${NC}"
 pkill -f "python.*app.py" 2>/dev/null
+
+# Also check for any remaining Go processes from FI-MCP
+echo -e "${YELLOW}🔍 Cleaning up any remaining Go processes...${NC}"
+pkill -f "go.*run" 2>/dev/null
 
 echo ""
 echo -e "${GREEN}🎉 All servers stopped successfully!${NC}"

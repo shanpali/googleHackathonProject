@@ -219,6 +219,7 @@ export default function NomineeSafeguard() {
             }
           }
         }
+        // If no REIT data found, assume not registered
         return 'not_registered';
       default:
         return 'unknown';
@@ -292,6 +293,76 @@ export default function NomineeSafeguard() {
   // Defensive parse for documentation status
   const documentationStatus = Number(nomineeData.riskAssessment?.documentationStatus);
 
+  // Function to calculate overall risk status based on nominee registration
+  const calculateOverallRiskStatus = () => {
+    const accountTypes = ['mutualFunds', 'stocks', 'epf', 'bankAccounts', 'reit'];
+    const assetWiseNominees = nomineeData.assetWiseNominees || {};
+    
+    // Only consider accounts that have nominee data
+    const availableAccounts = accountTypes.filter(accountType => {
+      if (accountType === 'reit') {
+        // For REIT, check if there's any REIT data in net worth
+        const reitHoldings = data.fetch_net_worth?.accountDetailsBulkResponse?.accountDetailsMap;
+        return reitHoldings && Object.keys(reitHoldings).length > 0;
+      }
+      return assetWiseNominees[accountType];
+    });
+    
+    const registeredAccounts = availableAccounts.filter(accountType => 
+      getNomineeStatus(accountType) === 'registered'
+    );
+    
+    const registrationRate = availableAccounts.length > 0 
+      ? (registeredAccounts.length / availableAccounts.length) * 100 
+      : 0;
+    
+    // Also consider insurance coverage and documentation status
+    const coverageRatio = nomineeData.riskAssessment?.coverageRatio || 0;
+    const documentationStatus = nomineeData.riskAssessment?.documentationStatus || 0;
+    
+    // Calculate overall score
+    const overallScore = (registrationRate * 0.4) + (coverageRatio * 0.3) + (documentationStatus * 0.3);
+    
+    if (overallScore >= 80 && registrationRate >= 80) {
+      return 'Low';
+    } else if (overallScore >= 60) {
+      return 'Medium';
+    } else {
+      return 'High';
+    }
+  };
+
+  // Calculate dynamic overall risk status
+  const overallRiskStatus = calculateOverallRiskStatus();
+  
+  // Debug logging
+  console.log('Nominee Status Calculation:', {
+    mutualFunds: getNomineeStatus('mutualFunds'),
+    stocks: getNomineeStatus('stocks'),
+    epf: getNomineeStatus('epf'),
+    bankAccounts: getNomineeStatus('bankAccounts'),
+    reit: getNomineeStatus('reit'),
+    overallRiskStatus,
+    coverageRatio: nomineeData.riskAssessment?.coverageRatio,
+    documentationStatus: nomineeData.riskAssessment?.documentationStatus,
+    availableAccounts: ['mutualFunds', 'stocks', 'epf', 'bankAccounts', 'reit'].filter(accountType => {
+      if (accountType === 'reit') {
+        const reitHoldings = data.fetch_net_worth?.accountDetailsBulkResponse?.accountDetailsMap;
+        return reitHoldings && Object.keys(reitHoldings).length > 0;
+      }
+      return nomineeData.assetWiseNominees?.[accountType];
+    }),
+    registrationRate: (['mutualFunds', 'stocks', 'epf', 'bankAccounts', 'reit'].filter(accountType => 
+      getNomineeStatus(accountType) === 'registered'
+    ).length / ['mutualFunds', 'stocks', 'epf', 'bankAccounts', 'reit'].filter(accountType => {
+      if (accountType === 'reit') {
+        const reitHoldings = data.fetch_net_worth?.accountDetailsBulkResponse?.accountDetailsMap;
+        return reitHoldings && Object.keys(reitHoldings).length > 0;
+      }
+      return nomineeData.assetWiseNominees?.[accountType];
+    }).length) * 100
+  });
+
   return (
     <Box sx={{ flexGrow: 1, p: 4 }}>
       <Typography variant="h4" fontWeight={700} mb={3} color="primary">
@@ -301,10 +372,18 @@ export default function NomineeSafeguard() {
       {/* Risk Assessment Overview */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={3}>
-          <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
+          <Card sx={{ 
+            borderRadius: 3, 
+            background: overallRiskStatus === 'Low' 
+              ? 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)' 
+              : overallRiskStatus === 'Medium'
+              ? 'linear-gradient(135deg, #f57c00 0%, #ff9800 100%)'
+              : 'linear-gradient(135deg, #d32f2f 0%, #f44336 100%)',
+            color: 'white' 
+          }}>
             <CardContent>
               <Typography variant="h6" mb={1}>Risk Level</Typography>
-              <Typography variant="h4" fontWeight={700}>{nomineeData.riskAssessment.overallRisk}</Typography>
+              <Typography variant="h4" fontWeight={700}>{overallRiskStatus}</Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>Overall protection status</Typography>
             </CardContent>
           </Card>
