@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import ADKMessageDisplay from './components/ADKMessageDisplay';
 
 // Helper function to format AI response text
 function formatResponse(text) {
@@ -191,7 +192,39 @@ function Chatbot() {
     setLastInput(messageToSend);
     try {
       const res = await axios.post('/chatbot', { message: messageToSend }, { withCredentials: true });
-      if (res.data && res.data.history) {
+      
+      // Handle ADK agent enhanced response
+      if (res.data && res.data.response) {
+        // Add user message
+        setMessages(prev => [...prev, { role: 'user', text: messageToSend }]);
+        
+        // Add assistant response with enhanced data
+        const assistantMessage = {
+          role: 'assistant',
+          text: res.data.response,
+          analysis_type: res.data.analysis_type,
+          confidence: res.data.confidence,
+          recommendations: res.data.recommendations || [],
+          insights: res.data.insights || []
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        // Load follow-up questions after response
+        const recentMessages = res.data.history ? res.data.history.slice(-4) : [assistantMessage];
+        const conversationContext = recentMessages.map(msg => `${msg.role}: ${msg.text}`).join('\n');
+        loadFollowUpQuestions(conversationContext);
+        
+        // Show ADK agent capabilities if available
+        if (res.data.analysis_type && res.data.analysis_type !== 'general') {
+          console.log('ADK Agent Analysis:', {
+            type: res.data.analysis_type,
+            confidence: res.data.confidence,
+            recommendations: res.data.recommendations,
+            insights: res.data.insights
+          });
+        }
+      } else if (res.data && res.data.history) {
+        // Fallback to original response format
         setMessages(res.data.history);
         
         // Load follow-up questions after response
@@ -288,35 +321,48 @@ function Chatbot() {
             justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
             margin: '10px 0'
           }}>
-            <div 
-              style={{
-                background: msg.role === 'user' ? 'linear-gradient(90deg, #bbdefb 0%, #e3f2fd 100%)' : 
-                           msg.isQuestion ? 'linear-gradient(90deg, #f3e5f5 0%, #e8f5e8 100%)' : 'linear-gradient(90deg, #c8e6c9 0%, #f1f8e9 100%)',
-                color: '#222',
-                padding: msg.isQuestion ? '8px 12px' : '12px 18px',
-                borderRadius: msg.isQuestion ? 8 : 18,
-                maxWidth: '70%',
-                boxShadow: '0 1px 6px #e3f2fd',
-                fontSize: msg.isQuestion ? 14 : 16,
-                fontWeight: msg.isQuestion ? 500 : 500,
-                transition: 'background 0.3s',
-                border: msg.role === 'assistant' && error ? '1.5px solid #e57373' : 
-                       msg.isQuestion ? '1px solid #bbdefb' : 'none',
-                cursor: msg.isQuestion ? 'pointer' : 'default'
-              }}
-              onClick={msg.isQuestion ? () => handleQuestionClick(msg.text) : undefined}
-              onMouseOver={msg.isQuestion ? (e) => {
-                e.target.style.background = 'linear-gradient(90deg, #bbdefb 0%, #e1bee7 100%)';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 6px rgba(25, 118, 210, 0.3)';
-              } : undefined}
-              onMouseOut={msg.isQuestion ? (e) => {
-                e.target.style.background = 'linear-gradient(90deg, #f3e5f5 0%, #e8f5e8 100%)';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 1px 6px #e3f2fd';
-              } : undefined}
-            >
-              {msg.isQuestion ? (
+            {msg.role === 'user' ? (
+              <div 
+                style={{
+                  background: 'linear-gradient(90deg, #bbdefb 0%, #e3f2fd 100%)',
+                  color: '#222',
+                  padding: '12px 18px',
+                  borderRadius: 18,
+                  maxWidth: '70%',
+                  boxShadow: '0 1px 6px #e3f2fd',
+                  fontSize: 16,
+                  fontWeight: 500
+                }}
+              >
+                {msg.text}
+              </div>
+            ) : msg.isQuestion ? (
+              <div 
+                style={{
+                  background: 'linear-gradient(90deg, #f3e5f5 0%, #e8f5e8 100%)',
+                  color: '#222',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  maxWidth: '70%',
+                  boxShadow: '0 1px 6px #e3f2fd',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  border: '1px solid #bbdefb',
+                  cursor: 'pointer',
+                  transition: 'background 0.3s'
+                }}
+                onClick={() => handleQuestionClick(msg.text)}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'linear-gradient(90deg, #bbdefb 0%, #e1bee7 100%)';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 6px rgba(25, 118, 210, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'linear-gradient(90deg, #f3e5f5 0%, #e8f5e8 100%)';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 1px 6px #e3f2fd';
+                }}
+              >
                 <div style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -327,10 +373,13 @@ function Chatbot() {
                   <span style={{ fontSize: 16 }}>💡</span>
                   {msg.text}
                 </div>
-              ) : (
-                msg.role === 'assistant' ? formatResponse(msg.text) : msg.text
-              )}
-            </div>
+              </div>
+            ) : (
+              // Use ADK component for assistant messages
+              <div style={{ maxWidth: '85%', width: '100%' }}>
+                <ADKMessageDisplay message={msg} />
+              </div>
+            )}
           </div>
         ))}
         {loading && <div style={{ color: '#888', textAlign: 'left', fontStyle: 'italic' }}>Bot is typing...</div>}

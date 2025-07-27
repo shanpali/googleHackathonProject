@@ -265,7 +265,17 @@ export default function Insights({ data, customInsights }) {
         )}
       </Box>
       {loading && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4, gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          my: 4, 
+          gap: 2,
+          width: '100%',
+          maxWidth: 1200,
+          mx: 'auto'
+        }}>
           <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
             {(() => {
               const messages = [

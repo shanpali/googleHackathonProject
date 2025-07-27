@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, CircularProgress, Button, Avatar, Fab, Fade, Chip, Tooltip, Modal, IconButton, Skeleton } from '@mui/material';
+import { Box, Typography, Grid, CircularProgress, Button, Avatar, Fab, Fade, Chip, Tooltip, Modal, IconButton, Skeleton, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Link } from '@mui/material';
 import FinancialOverview from './FinancialOverview';
 import AssetAllocation from './AssetAllocation';
+import EnhancedAssetAllocation from './EnhancedAssetAllocation';
 import Insights from './Insights';
 import HealthScore from './HealthScore';
 import RecentTransactions from './RecentTransactions';
@@ -49,6 +50,12 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [localGlobalRefreshTrigger, setLocalGlobalRefreshTrigger] = useState(0);
   const [userProfile, setUserProfile] = useState({ name: 'User' });
+  
+  // Fi-MCP Authentication states
+  const [fiMcpAuthDialog, setFiMcpAuthDialog] = useState(false);
+  const [fiMcpLoginUrl, setFiMcpLoginUrl] = useState('');
+  const [fiMcpLoading, setFiMcpLoading] = useState(false);
+  const [fiMcpStatus, setFiMcpStatus] = useState('');
   
   // Lazy loading states for AI components
   const [insightsLoaded, setInsightsLoaded] = useState(false);
@@ -162,7 +169,7 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
 
   const fetchAllExportData = async () => {
     try {
-      // Fetch proactive insights
+      // Fetch proactive insights (generic financial insights)
       const proactiveRes = await axios.get('/insights', { withCredentials: true });
       if (proactiveRes.data && Array.isArray(proactiveRes.data.insights)) {
         setProactiveInsights(proactiveRes.data.insights);
@@ -170,19 +177,70 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
 
       // Fetch goals
       const goalsRes = await axios.get('/goals', { withCredentials: true });
+      let userGoals = [];
       if (goalsRes.data && Array.isArray(goalsRes.data.goals)) {
-        setGoals(goalsRes.data.goals);
+        userGoals = goalsRes.data.goals;
+        setGoals(userGoals);
       }
 
-      // Fetch goal-based insights
-      if (goals.length > 0) {
-        const goalInsightsRes = await axios.post('/insights', { goals }, { withCredentials: true });
+      // Fetch goal-based insights (only for goals section)
+      if (userGoals.length > 0) {
+        const goalInsightsRes = await axios.post('/insights', { goals: userGoals }, { withCredentials: true });
         if (goalInsightsRes.data && Array.isArray(goalInsightsRes.data.insights)) {
           setGoalBasedInsights(goalInsightsRes.data.insights);
         }
       }
     } catch (error) {
       console.error('Error fetching export data:', error);
+    }
+  };
+
+  // Fi-MCP Authentication functions
+  const handleFiMcpAuth = async () => {
+    try {
+      setFiMcpLoading(true);
+      setFiMcpStatus('');
+      
+      const response = await axios.post('/fi-mcp-auth', {}, { withCredentials: true });
+      
+      if (response.data.status === 'auth_required') {
+        setFiMcpLoginUrl(response.data.login_url);
+        setFiMcpAuthDialog(true);
+        setFiMcpStatus('Please authenticate with fi-mcp server');
+      } else if (response.data.status === 'authenticated') {
+        setFiMcpStatus('Already authenticated!');
+        // Retry fetching data
+        await refreshData();
+      } else {
+        setFiMcpStatus('Authentication failed');
+      }
+    } catch (err) {
+      setFiMcpStatus('Error: ' + (err.response?.data?.message || err.message));
+      console.error('Fi-MCP Auth Error:', err);
+    } finally {
+      setFiMcpLoading(false);
+    }
+  };
+
+  const handleFiMcpRetry = async () => {
+    try {
+      setFiMcpLoading(true);
+      setFiMcpStatus('');
+      
+      const response = await axios.post('/fi-mcp-retry', {}, { withCredentials: true });
+      
+      if (response.data.status === 'success') {
+        setData(response.data.data);
+        setFiMcpStatus('Successfully loaded real data!');
+        setFiMcpAuthDialog(false);
+      } else {
+        setFiMcpStatus('No real data available after authentication');
+      }
+    } catch (err) {
+      setFiMcpStatus('Error: ' + (err.response?.data?.message || err.message));
+      console.error('Fi-MCP Retry Error:', err);
+    } finally {
+      setFiMcpLoading(false);
     }
   };
 
@@ -193,8 +251,13 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
         flexDirection: 'column', 
         alignItems: 'center', 
         justifyContent: 'center', 
-        height: '100vh',
-        gap: 2 
+        height: '100%',
+        minHeight: '60vh',
+        gap: 2,
+        width: '100%',
+        maxWidth: 1200,
+        mx: 'auto',
+        p: { xs: 1, md: 4 }
       }}>
         <Typography variant="h4" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
           {(() => {
@@ -319,11 +382,40 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
         </Box>
       </Box>
 
+      {/* Fi-MCP Authentication Section */}
+      <Box sx={{ mb: 3, p: 3, bgcolor: 'background.paper', borderRadius: 3, border: '1px solid #e0e0e0', boxShadow: 1 }}>
+        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          🔐 Connect to Real Financial Data
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+          Click below to authenticate with the fi-mcp server and access your real financial data instead of mock data.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button 
+            variant="contained" 
+            onClick={handleFiMcpAuth}
+            disabled={fiMcpLoading}
+            startIcon={fiMcpLoading ? <CircularProgress size={20} /> : null}
+            sx={{ fontWeight: 600 }}
+          >
+            {fiMcpLoading ? 'Connecting...' : 'Connect to Real Data'}
+          </Button>
+          {fiMcpStatus && (
+            <Alert 
+              severity={fiMcpStatus.includes('Error') ? 'error' : fiMcpStatus.includes('Success') ? 'success' : 'info'}
+              sx={{ flex: 1, minWidth: 200 }}
+            >
+              {fiMcpStatus}
+            </Alert>
+          )}
+        </Box>
+      </Box>
+
       {/* Main Dashboard Content */}
       <Grid container spacing={3} columns={12}>
         <Box sx={{ gridColumn: { xs: 'span 12', md: 'span 8' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <FinancialOverview data={data} animate onNetWorthClick={() => setSelectedTab && setSelectedTab('Portfolio')} onAssetAdded={globalRefresh} />
-          <AssetAllocation data={data} />
+                          <EnhancedAssetAllocation data={data} />
           
           {/* Lazy-loaded Insights Component */}
           {insightsLoaded ? (
@@ -588,6 +680,56 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
           </Box>
         </Box>
       </Modal>
+
+      {/* Fi-MCP Authentication Dialog */}
+      <Dialog open={fiMcpAuthDialog} onClose={() => setFiMcpAuthDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          🔐 Fi-MCP Authentication Required
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            To access your real financial data, you need to authenticate with the fi-mcp server.
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            Click the link below to open the authentication page in a new tab. After entering your OTP, 
+            return here and click "Retry" to load your real data.
+          </Typography>
+          <Box sx={{ mb: 2 }}>
+            <Link 
+              href={fiMcpLoginUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              sx={{ 
+                display: 'inline-block',
+                p: 2, 
+                bgcolor: 'primary.main', 
+                color: 'white', 
+                borderRadius: 1,
+                textDecoration: 'none',
+                '&:hover': { bgcolor: 'primary.dark' }
+              }}
+            >
+              🔗 Open Authentication Page
+            </Link>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            After authentication, click "Retry" below to fetch your real financial data.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFiMcpAuthDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleFiMcpRetry} 
+            variant="contained"
+            disabled={fiMcpLoading}
+            startIcon={fiMcpLoading ? <CircularProgress size={20} /> : null}
+          >
+            {fiMcpLoading ? 'Loading...' : 'Retry with Real Data'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

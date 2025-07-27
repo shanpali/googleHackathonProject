@@ -1,6 +1,8 @@
-flask
-requests
-flask-cors
-python-dotenv
-firebase-admin
-google-cloud-firestore 
+flask==2.3.3
+flask-cors==4.0.0
+firebase-admin==6.2.0
+requests==2.31.0
+python-dotenv==1.0.0
+google-cloud-speech==2.21.0
+google-cloud-language==2.12.0
+google-generativeai==0.3.2 

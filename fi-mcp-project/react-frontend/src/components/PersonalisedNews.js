@@ -152,8 +152,13 @@ export default function PersonalisedNews({ phone }) {
       flexDirection: 'column', 
       alignItems: 'center', 
       justifyContent: 'center', 
-      height: '100vh',
-      gap: 2 
+      height: '100%',
+      minHeight: '60vh',
+      gap: 2,
+      width: '100%',
+      maxWidth: 1100,
+      mx: 'auto',
+      p: { xs: 1, md: 4 }
     }}>
       <Typography variant="h5" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
         {(() => {

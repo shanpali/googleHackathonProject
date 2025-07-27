@@ -51,5 +51,8 @@ COLLECTIONS = {
     'user_cash_assets': 'user_cash_assets',
     'user_cash_transactions': 'user_cash_transactions',
     'user_news': 'user_news',
-    'user_profiles': 'user_profiles'
+    'user_profiles': 'user_profiles',
+    'user_lending': 'user_lending',
+    'user_trust_ratings': 'user_trust_ratings',
+    'user_voice_notes': 'user_voice_notes'
 } 

@@ -136,7 +136,17 @@ export default function HealthScore({ data }) {
         </Box>
 
         {loading && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4, gap: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            my: 4, 
+            gap: 2,
+            width: '100%',
+            maxWidth: 1200,
+            mx: 'auto'
+          }}>
             <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
               {(() => {
                 const messages = [
@@ -181,7 +191,7 @@ export default function HealthScore({ data }) {
               }} />
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-              This might take a moment... (or two)
+              AI is working harder than your financial advisor
             </Typography>
           </Box>
         )}

@@ -10,6 +10,7 @@ import Settings from './components/Settings';
 import Login from './Login';
 import Goals from './components/Goals';
 import PersonalisedNews from './components/PersonalisedNews';
+import UdhaarAurBharosa from './components/UdhaarAurBharosa';
 
 const theme = createTheme({
   palette: {
@@ -25,6 +26,7 @@ const TABS = [
   'Goals',
   'Tax Planning',
   'Nominee Safeguard',
+  'Udhaar Aur Bharosa',
   'Reports',
   'Settings',
   'Investment Insights',
@@ -59,6 +61,8 @@ function App() {
         return <TaxPlanning phone={phone} />;
       case 'Nominee Safeguard':
         return <NomineeSafeguard phone={phone} />;
+      case 'Udhaar Aur Bharosa':
+        return <UdhaarAurBharosa />;
       case 'Reports':
         return <Reports phone={phone} />;
       case 'Settings':

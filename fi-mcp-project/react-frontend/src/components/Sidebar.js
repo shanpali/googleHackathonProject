@@ -9,6 +9,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FeedIcon from '@mui/icons-material/Feed';
 import PersonIcon from '@mui/icons-material/Person';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import axios from 'axios';
 
 const mainMenu = [
@@ -17,6 +18,7 @@ const mainMenu = [
   { text: 'Goals', icon: <EmojiEventsIcon /> },
   { text: 'Tax Planning', icon: <ReceiptIcon /> },
   { text: 'Nominee Safeguard', icon: <AssignmentIndIcon /> },
+  { text: 'Udhaar Aur Bharosa', icon: <HandshakeIcon /> },
   { text: 'Reports', icon: <AssessmentIcon /> },
   { text: 'Investment Insights', icon: <FeedIcon /> },
 ];

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Button, TextField, Chip, Divider, IconButton, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Fab, Tooltip, List, ListItem, ListItemText } from '@mui/material';
+import { 
+  Grid, Card, CardContent, Typography, Box, Button, TextField, Chip, Divider, 
+  IconButton, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, 
+  DialogActions, Fab, Tooltip, List, ListItem, ListItemText, Paper,
+  Stepper, Step, StepLabel, Avatar, Accordion, AccordionSummary, AccordionDetails,
+  RadioGroup, Radio, FormControlLabel, FormControl, FormLabel, Slider
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -10,6 +16,10 @@ import SavingsIcon from '@mui/icons-material/Savings';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import ChatIcon from '@mui/icons-material/Chat';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios';
 
 const GOAL_TYPES = [
@@ -23,6 +33,12 @@ const ICON_MAP = {
   spending: <InfoIcon color="info" />,
   opportunity: <SavingsIcon color="success" />,
   alert: <WarningAmberIcon color="warning" />,
+};
+
+const PRIORITY_COLORS = {
+  high: 'error',
+  medium: 'warning',
+  low: 'success'
 };
 
 export default function Goals({ onGoalChange }) {
@@ -40,6 +56,20 @@ export default function Goals({ onGoalChange }) {
   const [errorGoalInsights, setErrorGoalInsights] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [cached, setCached] = useState(false);
+
+  // Agentic goal creation states
+  const [agentMode, setAgentMode] = useState(false);
+  const [agentStep, setAgentStep] = useState(0);
+  const [agentSuggestions, setAgentSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedGoalType, setSelectedGoalType] = useState('general');
+  const [userMessage, setUserMessage] = useState('');
+  const [conversationHistory, setConversationHistory] = useState([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const [customizingGoal, setCustomizingGoal] = useState(false);
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [lastCreatedGoal, setLastCreatedGoal] = useState(null);
 
   // Load goals and cached insights from database on component mount
   useEffect(() => {
@@ -114,6 +144,211 @@ export default function Goals({ onGoalChange }) {
     saveGoalsToDB(newGoals);
   };
 
+  // Agentic goal creation functions
+  const startAgentMode = () => {
+    setAgentMode(true);
+    setAgentStep(0);
+    setConversationHistory([
+      {
+        type: 'agent',
+        message: "Hi! I'm your AI financial advisor. I'll help you create realistic and achievable financial goals based on your current financial situation. What type of goals are you thinking about?",
+        timestamp: new Date()
+      }
+    ]);
+  };
+
+  const handleAgentMessage = async (message) => {
+    if (!message.trim()) return;
+
+    // Add user message to conversation
+    const newConversation = [...conversationHistory, {
+      type: 'user',
+      message: message,
+      timestamp: new Date()
+    }];
+    setConversationHistory(newConversation);
+
+    // Check for goal-specific questions first
+    if (customizingGoal && selectedSuggestion) {
+      const goalSpecificAnswer = handleGoalSpecificQuestion(message);
+      if (goalSpecificAnswer) {
+        setConversationHistory([...newConversation, {
+          type: 'agent',
+          message: goalSpecificAnswer,
+          timestamp: new Date()
+        }]);
+        return;
+      }
+    }
+
+    setLoadingSuggestions(true);
+    try {
+      const response = await axios.post('/goal-suggestions', {
+        message: message,
+        goal_type: selectedGoalType
+      }, { withCredentials: true });
+
+      if (response.data.success) {
+        // If we're in customization mode, provide goal customization guidance
+        if (customizingGoal && selectedSuggestion) {
+          const customizationResponse = {
+            type: 'agent',
+            message: `Perfect! I can help you customize your "${selectedSuggestion.name}" goal. Here's what I suggest:
+
+• **Goal Name**: ${selectedSuggestion.name} (you can modify this)
+• **Amount**: ₹${selectedSuggestion.amount.toLocaleString()} (adjust based on your capacity)
+• **Target Year**: ${selectedSuggestion.year} (consider your timeline)
+• **Monthly Savings**: ₹${selectedSuggestion.monthly_savings_needed.toLocaleString()}
+
+You can modify these values in the form below. Would you like me to help you adjust any of these parameters?`,
+            timestamp: new Date()
+          };
+          setConversationHistory([...newConversation, customizationResponse]);
+        } else {
+          // Normal goal suggestions flow
+          setAgentSuggestions(response.data.suggestions);
+          
+          // Add agent response to conversation
+          const agentResponse = {
+            type: 'agent',
+            message: response.data.analysis,
+            suggestions: response.data.suggestions,
+            timestamp: new Date()
+          };
+          setConversationHistory([...newConversation, agentResponse]);
+          
+          setAgentStep(1);
+        }
+      }
+    } catch (error) {
+      console.error('Error getting goal suggestions:', error);
+      
+      // Provide fallback response based on context
+      let fallbackMessage = "I'm having trouble analyzing your financial profile right now. Let me provide some general goal suggestions.";
+      
+      if (customizingGoal && selectedSuggestion) {
+        fallbackMessage = `I can help you customize your "${selectedSuggestion.name}" goal. You can adjust the amount, timeline, and other parameters in the form below. The suggested monthly savings is ₹${selectedSuggestion.monthly_savings_needed.toLocaleString()}.`;
+      }
+      
+      setConversationHistory([...newConversation, {
+        type: 'agent',
+        message: fallbackMessage,
+        timestamp: new Date()
+      }]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (suggestion) => {
+    setSelectedSuggestion(suggestion);
+    setCustomizingGoal(true);
+    setAgentStep(2);
+    
+    // Trigger agent interaction to help customize the goal
+    const agentMessage = `I've selected the "${suggestion.name}" goal. Can you help me customize this goal? The suggested amount is ₹${suggestion.amount.toLocaleString()} by ${suggestion.year}.`;
+    
+    // Add user selection to conversation
+    setConversationHistory(prev => [...prev, {
+      type: 'user',
+      message: `I want to create a ${suggestion.name} goal for ₹${suggestion.amount.toLocaleString()} by ${suggestion.year}`,
+      timestamp: new Date()
+    }]);
+    
+    // Trigger agent response
+    setTimeout(() => {
+      handleAgentMessage(agentMessage);
+    }, 500);
+  };
+
+  const customizeAndSaveGoal = async () => {
+    if (!selectedSuggestion) return;
+    
+    setSavingGoal(true);
+    
+    try {
+      const newGoal = {
+        type: selectedSuggestion.type,
+        name: selectedSuggestion.name,
+        amount: selectedSuggestion.amount,
+        year: selectedSuggestion.year
+      };
+      
+      // Add final agent confirmation message
+      setConversationHistory(prev => [...prev, {
+        type: 'agent',
+        message: `Perfect! I'm creating your "${newGoal.name}" goal for ₹${newGoal.amount.toLocaleString()} by ${newGoal.year}. This will require monthly savings of ₹${selectedSuggestion.monthly_savings_needed.toLocaleString()}. I'll also generate personalized insights to help you achieve this goal!`,
+        timestamp: new Date()
+      }]);
+      
+      // Small delay to show the confirmation message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newGoals = [...goals, newGoal];
+      setGoals(newGoals);
+      await saveGoalsToDB(newGoals);
+      
+      // Show success message
+      setConversationHistory(prev => [...prev, {
+        type: 'agent',
+        message: `🎉 Success! Your "${newGoal.name}" goal has been created and saved. You can now get personalized insights based on this goal using the "Get Goal-Based Insights & Alerts" button below. I'll help you track your progress and provide recommendations to achieve this goal!`,
+        timestamp: new Date()
+      }]);
+      
+      // Show success notification in main area
+      setLastCreatedGoal(newGoal);
+      setShowSuccessNotification(true);
+      
+      // Auto-trigger goal-based insights after a short delay
+      setTimeout(() => {
+        handleRequestGoalInsights(false);
+      }, 1000);
+      
+      // Reset agent mode after showing success message
+      setTimeout(() => {
+        setAgentMode(false);
+        setAgentStep(0);
+        setAgentSuggestions([]);
+        setSelectedSuggestion(null);
+        setCustomizingGoal(false);
+        setConversationHistory([]);
+        setUserMessage('');
+        setSavingGoal(false);
+      }, 4000);
+    } catch (error) {
+      console.error('Error saving goal:', error);
+      setConversationHistory(prev => [...prev, {
+        type: 'agent',
+        message: "Sorry, there was an error saving your goal. Please try again.",
+        timestamp: new Date()
+      }]);
+      setSavingGoal(false);
+    }
+  };
+
+  // Helper function to handle goal-specific questions
+  const handleGoalSpecificQuestion = (message) => {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('monthly') || lowerMessage.includes('savings')) {
+      return `For your "${selectedSuggestion.name}" goal, you'll need to save ₹${selectedSuggestion.monthly_savings_needed.toLocaleString()} per month. This represents about ${((selectedSuggestion.monthly_savings_needed / (selectedSuggestion.amount / selectedSuggestion.year)) * 100).toFixed(1)}% of your goal amount annually.`;
+    }
+    
+    if (lowerMessage.includes('timeline') || lowerMessage.includes('year') || lowerMessage.includes('time')) {
+      return `Your goal timeline is ${selectedSuggestion.year} years. This gives you ${selectedSuggestion.year} years to save ₹${selectedSuggestion.amount.toLocaleString()}, which is a realistic timeline for this type of goal.`;
+    }
+    
+    if (lowerMessage.includes('amount') || lowerMessage.includes('cost')) {
+      return `The goal amount is ₹${selectedSuggestion.amount.toLocaleString()}. This is based on your financial profile and current savings capacity. You can adjust this amount based on your specific needs.`;
+    }
+    
+    if (lowerMessage.includes('priority') || lowerMessage.includes('important')) {
+      return `This goal is marked as ${selectedSuggestion.priority} priority. ${selectedSuggestion.reasoning}`;
+    }
+    
+    return null; // Let the main agent handle other questions
+  };
+
   // Fetch goal-based insights (optionally refresh)
   const handleRequestGoalInsights = async (refresh = false) => {
     // Don't proceed if no goals exist
@@ -155,6 +390,13 @@ export default function Goals({ onGoalChange }) {
   // Filtered goals
   const filteredGoals = filter === 'all' ? goals : goals.filter(g => g.type === filter);
 
+  // Agent conversation steps
+  const agentSteps = [
+    'Tell me about your goals',
+    'Choose from suggestions',
+    'Customize your goal'
+  ];
+
   return (
     <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', p: { xs: 1, md: 3 }, minHeight: 600 }}>
       {/* Header Section */}
@@ -168,25 +410,280 @@ export default function Goals({ onGoalChange }) {
             Track, manage, and achieve your short and long-term goals.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setAddOpen(true)}
-          sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1.2, fontSize: 18, boxShadow: 2 }}
-        >
-          Add Goal
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<SmartToyIcon />}
+            onClick={startAgentMode}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1.2, fontSize: 16, boxShadow: 2 }}
+          >
+            AI Goal Assistant
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setAddOpen(true)}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1.2, fontSize: 18, boxShadow: 2 }}
+          >
+            Add Goal
+          </Button>
+        </Box>
       </Box>
+
+      {/* Agent Mode Dialog */}
+      <Dialog 
+        open={agentMode} 
+        onClose={() => setAgentMode(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3, minHeight: 600 }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          bgcolor: 'primary.main', 
+          color: 'white',
+          borderRadius: '12px 12px 0 0'
+        }}>
+          <SmartToyIcon />
+          <Box>
+            <Typography variant="h6">AI Financial Goal Assistant</Typography>
+            <Typography variant="caption">Let me help you create realistic goals</Typography>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 3 }}>
+          {/* Stepper */}
+          <Stepper activeStep={agentStep} sx={{ mb: 3 }}>
+            {agentSteps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+
+          {/* Conversation Area */}
+          <Box sx={{ mb: 3, maxHeight: 300, overflowY: 'auto' }}>
+            {conversationHistory.map((msg, idx) => (
+              <Box key={idx} sx={{ mb: 2, display: 'flex', justifyContent: msg.type === 'user' ? 'flex-end' : 'flex-start' }}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    maxWidth: '80%',
+                    bgcolor: msg.type === 'user' ? 'primary.main' : 'grey.100',
+                    color: msg.type === 'user' ? 'white' : 'text.primary',
+                    borderRadius: 2
+                  }}
+                >
+                  <Typography variant="body1">{msg.message}</Typography>
+                  
+                  {/* Show suggestions if available */}
+                  {msg.suggestions && msg.suggestions.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                        Here are some personalized goal suggestions:
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {msg.suggestions.map((suggestion, sIdx) => (
+                          <Grid item xs={12} sm={6} key={sIdx}>
+                            <Card 
+                              sx={{ 
+                                cursor: 'pointer',
+                                '&:hover': { boxShadow: 3 },
+                                border: '2px solid transparent',
+                                '&:hover': { borderColor: 'primary.main' }
+                              }}
+                              onClick={() => selectSuggestion(suggestion)}
+                            >
+                              <CardContent>
+                                <Typography variant="h6" fontWeight={600}>
+                                  {suggestion.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  ₹{suggestion.amount.toLocaleString()} by {suggestion.year}
+                                </Typography>
+                                <Chip 
+                                  label={suggestion.priority} 
+                                  size="small" 
+                                  color={PRIORITY_COLORS[suggestion.priority]}
+                                  sx={{ mt: 1 }}
+                                />
+                                <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                                  {suggestion.reasoning}
+                                </Typography>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  )}
+                </Paper>
+              </Box>
+            ))}
+            
+            {loadingSuggestions && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2" color="text.secondary">
+                  Analyzing your financial profile...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Input Area */}
+          {agentStep < 3 && (
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label={customizingGoal ? "Ask me about customizing your goal..." : "Tell me about your financial goals..."}
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAgentMessage(userMessage);
+                    setUserMessage('');
+                  }
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={() => {
+                  handleAgentMessage(userMessage);
+                  setUserMessage('');
+                }}
+                disabled={!userMessage.trim() || loadingSuggestions}
+              >
+                Send
+              </Button>
+            </Box>
+          )}
+
+          {/* Goal Customization */}
+          {customizingGoal && selectedSuggestion && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Customize Your Goal: {selectedSuggestion.name}
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Goal Name"
+                    defaultValue={selectedSuggestion.name}
+                    sx={{ mb: 2 }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Amount (₹)"
+                    type="number"
+                    defaultValue={selectedSuggestion.amount}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Target Year"
+                    type="number"
+                    defaultValue={selectedSuggestion.year}
+                    sx={{ mb: 2 }}
+                  />
+                  <FormControl fullWidth>
+                    <FormLabel>Goal Type</FormLabel>
+                    <RadioGroup
+                      value={selectedSuggestion.type}
+                      row
+                    >
+                      <FormControlLabel value="short" control={<Radio />} label="Short Term" />
+                      <FormControlLabel value="long" control={<Radio />} label="Long Term" />
+                    </RadioGroup>
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  Monthly Savings Needed: ₹{selectedSuggestion.monthly_savings_needed.toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedSuggestion.reasoning}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setAgentMode(false)}>
+            Cancel
+          </Button>
+          {customizingGoal && (
+            <Button 
+              variant="contained" 
+              onClick={customizeAndSaveGoal}
+              disabled={savingGoal}
+              startIcon={savingGoal ? <CircularProgress size={20} color="inherit" /> : <CheckCircleIcon />}
+            >
+              {savingGoal ? 'Saving...' : 'Save Goal'}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Notification */}
+      {showSuccessNotification && lastCreatedGoal && (
+        <Alert 
+          severity="success" 
+          sx={{ mb: 3 }}
+          onClose={() => setShowSuccessNotification(false)}
+          action={
+            <Button color="inherit" size="small" onClick={() => setShowSuccessNotification(false)}>
+              Dismiss
+            </Button>
+          }
+        >
+          <Typography variant="subtitle1" fontWeight={600}>
+            Goal Created Successfully! 🎉
+          </Typography>
+          <Typography variant="body2">
+            Your "{lastCreatedGoal.name}" goal has been saved. Goal-based insights are being generated...
+          </Typography>
+        </Alert>
+      )}
+
       {/* Filter Bar */}
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3, mt: 1 }}>
         <Button variant={filter === 'all' ? 'contained' : 'outlined'} onClick={() => setFilter('all')}>All</Button>
         <Button variant={filter === 'short' ? 'contained' : 'outlined'} color="primary" onClick={() => setFilter('short')}>Short Term</Button>
         <Button variant={filter === 'long' ? 'contained' : 'outlined'} color="success" onClick={() => setFilter('long')}>Long Term</Button>
       </Box>
+
       {/* Goals Grid */}
       {loading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 6, gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          height: '100%',
+          minHeight: '60vh',
+          gap: 2,
+          width: '100%',
+          maxWidth: 1200,
+          mx: 'auto',
+          p: { xs: 1, md: 4 }
+        }}>
           <Typography variant="h6" color="primary" sx={{ textAlign: 'center', mb: 1 }}>
             {(() => {
               const messages = [
@@ -236,7 +733,18 @@ export default function Goals({ onGoalChange }) {
         </Box>
       ) : filteredGoals.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8, mb: 6 }}>
-          <Typography variant="h6" color="text.secondary" mb={2}>No goals yet. Click <b>Add Goal</b> to get started!</Typography>
+          <Typography variant="h6" color="text.secondary" mb={2}>
+            No goals yet. Try our <b>AI Goal Assistant</b> for personalized suggestions!
+          </Typography>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<SmartToyIcon />}
+            onClick={startAgentMode}
+            sx={{ mt: 2 }}
+          >
+            Get AI Goal Suggestions
+          </Button>
         </Box>
       ) : (
         <Grid container spacing={3} mb={4}>
@@ -256,6 +764,7 @@ export default function Goals({ onGoalChange }) {
           ))}
         </Grid>
       )}
+
       {/* Get Goal-Based Insights & Alerts Button */}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: 3, gap: 2 }}>
         <Button
@@ -284,6 +793,7 @@ export default function Goals({ onGoalChange }) {
           </IconButton>
         )}
       </Box>
+
       {/* Add Goal Modal */}
       <Dialog open={addOpen} onClose={() => setAddOpen(false)}>
         <DialogTitle>Add a New Goal</DialogTitle>
@@ -334,9 +844,20 @@ export default function Goals({ onGoalChange }) {
           </Button>
         </DialogActions>
       </Dialog>
+
       {/* Goal-based insights display */}
       {loadingGoalInsights && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2, gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          my: 2, 
+          gap: 2,
+          width: '100%',
+          maxWidth: 1200,
+          mx: 'auto'
+        }}>
           <Typography variant="h6" color="secondary" sx={{ textAlign: 'center', mb: 1 }}>
             {(() => {
               const messages = [
