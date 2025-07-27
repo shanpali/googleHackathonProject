@@ -855,7 +855,12 @@ def cash_asset():
         else:
             return jsonify({'error': 'Failed to add cash asset'}), 500
     elif request.method == 'DELETE':
-        asset_id = request.args.get('id')
+        # Try to get asset_id from request body first, then from query params
+        asset_id = None
+        if request.is_json:
+            asset_id = request.json.get('id')
+        if not asset_id:
+            asset_id = request.args.get('id')
         if not asset_id:
             return jsonify({'error': 'Asset ID is required'}), 400
         if delete_user_cash_asset(phone, asset_id):
