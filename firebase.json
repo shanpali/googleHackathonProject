@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "flask-backend",
+          "region": "asia-east1"
+        }
+      }
+    ]
+  }
+}
