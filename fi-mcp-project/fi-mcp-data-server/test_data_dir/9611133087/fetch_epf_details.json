@@ -1,0 +1,33 @@
+{
+  "epfDetails": {
+    "uanNumber": "123456789012",
+    "memberId": "MUM123456789",
+    "establishmentName": "Tech Solutions Ltd.",
+    "currentBalance": 320000,
+    "employeeContribution": 180000,
+    "employerContribution": 180000,
+    "interestEarned": 40000,
+    "lastUpdated": "2025-01-15T10:30:00Z",
+    "accountStatus": "ACTIVE",
+    "contributionHistory": [
+      {
+        "month": "2024-12",
+        "employeeContribution": 15000,
+        "employerContribution": 15000,
+        "interest": 2500
+      },
+      {
+        "month": "2024-11",
+        "employeeContribution": 15000,
+        "employerContribution": 15000,
+        "interest": 2400
+      },
+      {
+        "month": "2024-10",
+        "employeeContribution": 15000,
+        "employerContribution": 15000,
+        "interest": 2300
+      }
+    ]
+  }
+} 

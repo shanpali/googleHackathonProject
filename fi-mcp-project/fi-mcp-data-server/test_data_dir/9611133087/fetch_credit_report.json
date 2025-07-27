@@ -1,0 +1,94 @@
+{
+  "creditReport": {
+    "creditScore": 785,
+    "scoreRange": "GOOD",
+    "reportDate": "2025-01-15T10:30:00Z",
+    "personalInfo": {
+      "name": "Rahul Sharma",
+      "dateOfBirth": "1990-05-15",
+      "panNumber": "ABCDE1234F",
+      "address": "Mumbai, Maharashtra"
+    },
+    "accounts": [
+      {
+        "accountType": "CREDIT_CARD",
+        "institution": "HDFC Bank",
+        "accountNumber": "XXXX-XXXX-1234",
+        "creditLimit": 150000,
+        "currentBalance": 25000,
+        "paymentHistory": "GOOD",
+        "accountStatus": "ACTIVE",
+        "openingDate": "2020-03-15",
+        "lastPaymentDate": "2025-01-05",
+        "lastPaymentAmount": 15000
+      },
+      {
+        "accountType": "CREDIT_CARD",
+        "institution": "ICICI Bank",
+        "accountNumber": "XXXX-XXXX-5678",
+        "creditLimit": 100000,
+        "currentBalance": 15000,
+        "paymentHistory": "GOOD",
+        "accountStatus": "ACTIVE",
+        "openingDate": "2021-07-20",
+        "lastPaymentDate": "2025-01-10",
+        "lastPaymentAmount": 12000
+      },
+      {
+        "accountType": "PERSONAL_LOAN",
+        "institution": "HDFC Bank",
+        "accountNumber": "XXXX-XXXX-9012",
+        "loanAmount": 500000,
+        "currentBalance": 200000,
+        "paymentHistory": "GOOD",
+        "accountStatus": "ACTIVE",
+        "openingDate": "2023-01-15",
+        "lastPaymentDate": "2025-01-01",
+        "lastPaymentAmount": 15000
+      },
+      {
+        "accountType": "HOME_LOAN",
+        "institution": "SBI Bank",
+        "accountNumber": "XXXX-XXXX-3456",
+        "loanAmount": 2500000,
+        "currentBalance": 2200000,
+        "paymentHistory": "GOOD",
+        "accountStatus": "ACTIVE",
+        "openingDate": "2022-06-10",
+        "lastPaymentDate": "2025-01-01",
+        "lastPaymentAmount": 45000
+      }
+    ],
+    "enquiries": [
+      {
+        "date": "2024-12-15",
+        "institution": "HDFC Bank",
+        "purpose": "CREDIT_CARD_APPLICATION"
+      },
+      {
+        "date": "2024-11-20",
+        "institution": "ICICI Bank",
+        "purpose": "PERSONAL_LOAN_APPLICATION"
+      }
+    ],
+    "paymentHistory": {
+      "totalAccounts": 4,
+      "accountsInGoodStanding": 4,
+      "accountsWithLatePayments": 0,
+      "accountsWithDefault": 0,
+      "averagePaymentHistory": "GOOD"
+    },
+    "creditUtilization": {
+      "totalCreditLimit": 2750000,
+      "totalCurrentBalance": 2250000,
+      "utilizationPercentage": 18.2,
+      "recommendation": "LOW_UTILIZATION"
+    },
+    "recommendations": [
+      "Maintain current payment behavior",
+      "Consider increasing credit limits",
+      "Monitor credit utilization",
+      "Continue timely payments"
+    ]
+  }
+} 

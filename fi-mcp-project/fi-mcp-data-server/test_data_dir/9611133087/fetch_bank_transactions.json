@@ -1,0 +1,140 @@
+{
+  "bankTransactions": [
+    {
+      "bankName": "HDFC Bank",
+      "accountNumber": "XXXXXX1234",
+      "accountType": "SAVINGS",
+      "currentBalance": 450000,
+      "txns": [
+        {
+          "transactionId": "TXN001",
+          "date": "2025-01-15",
+          "amount": 75000,
+          "type": "CREDIT",
+          "narration": "SALARY CREDIT - TECH SOLUTIONS LTD",
+          "category": "SALARY"
+        },
+        {
+          "transactionId": "TXN002",
+          "date": "2025-01-14",
+          "amount": 2500,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO AMAZON",
+          "category": "SHOPPING"
+        },
+        {
+          "transactionId": "TXN003",
+          "date": "2025-01-13",
+          "amount": 1500,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO SWIGGY",
+          "category": "FOOD"
+        },
+        {
+          "transactionId": "TXN004",
+          "date": "2025-01-12",
+          "amount": 5000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO ZOMATO",
+          "category": "FOOD"
+        },
+        {
+          "transactionId": "TXN005",
+          "date": "2025-01-11",
+          "amount": 3000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO UBER",
+          "category": "TRANSPORT"
+        },
+        {
+          "transactionId": "TXN006",
+          "date": "2025-01-10",
+          "amount": 20000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO HDFC MUTUAL FUND",
+          "category": "INVESTMENT"
+        },
+        {
+          "transactionId": "TXN007",
+          "date": "2025-01-09",
+          "amount": 8000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO ICICI PRUDENTIAL",
+          "category": "INVESTMENT"
+        },
+        {
+          "transactionId": "TXN008",
+          "date": "2025-01-08",
+          "amount": 1200,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO NETFLIX",
+          "category": "ENTERTAINMENT"
+        },
+        {
+          "transactionId": "TXN009",
+          "date": "2025-01-07",
+          "amount": 1800,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO SPOTIFY",
+          "category": "ENTERTAINMENT"
+        },
+        {
+          "transactionId": "TXN010",
+          "date": "2025-01-06",
+          "amount": 4500,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO FLIPKART",
+          "category": "SHOPPING"
+        }
+      ]
+    },
+    {
+      "bankName": "ICICI Bank",
+      "accountNumber": "XXXXXX5678",
+      "accountType": "SAVINGS",
+      "currentBalance": 400000,
+      "txns": [
+        {
+          "transactionId": "TXN011",
+          "date": "2025-01-15",
+          "amount": 50000,
+          "type": "CREDIT",
+          "narration": "SALARY CREDIT - TECH SOLUTIONS LTD",
+          "category": "SALARY"
+        },
+        {
+          "transactionId": "TXN012",
+          "date": "2025-01-14",
+          "amount": 3000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO AMAZON",
+          "category": "SHOPPING"
+        },
+        {
+          "transactionId": "TXN013",
+          "date": "2025-01-13",
+          "amount": 2000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO SWIGGY",
+          "category": "FOOD"
+        },
+        {
+          "transactionId": "TXN014",
+          "date": "2025-01-12",
+          "amount": 15000,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO SBI MUTUAL FUND",
+          "category": "INVESTMENT"
+        },
+        {
+          "transactionId": "TXN015",
+          "date": "2025-01-11",
+          "amount": 2500,
+          "type": "DEBIT",
+          "narration": "UPI/PAYTM/PAYMENT TO ZOMATO",
+          "category": "FOOD"
+        }
+      ]
+    }
+  ]
+} 

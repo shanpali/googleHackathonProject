@@ -1,0 +1,37 @@
+{
+  "stockTransactions": [
+    {
+      "stockName": "HDFC BANK LIMITED",
+      "isin": "INE040A01034",
+      "quantity": 100,
+      "averagePrice": 1600,
+      "currentPrice": 1650,
+      "currentValue": 165000,
+      "investedAmount": 160000,
+      "returns": 5000,
+      "returnPercent": 3.125
+    },
+    {
+      "stockName": "RELIANCE INDUSTRIES LIMITED",
+      "isin": "INE009A01021",
+      "quantity": 50,
+      "averagePrice": 2200,
+      "currentPrice": 2300,
+      "currentValue": 115000,
+      "investedAmount": 110000,
+      "returns": 5000,
+      "returnPercent": 4.545
+    },
+    {
+      "stockName": "TATA CONSULTANCY SERVICES LIMITED",
+      "isin": "INE848E01016",
+      "quantity": 75,
+      "averagePrice": 3700,
+      "currentPrice": 3800,
+      "currentValue": 285000,
+      "investedAmount": 277500,
+      "returns": 7500,
+      "returnPercent": 2.703
+    }
+  ]
+} 
