@@ -1050,4 +1050,4 @@ def user_profile():
             return jsonify({'error': 'Failed to update profile', 'details': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 5001))) 
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 8080))) 
