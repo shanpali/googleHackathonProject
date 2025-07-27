@@ -2338,6 +2338,9 @@ class CustomFinancialAgent:
             # Extract credit data
             credit = self._extract_credit_data(financial_data)
             
+            # Extract cash assets
+            cash_assets = financial_data.get('cash_assets', [])
+            
             # Get user goals if available
             goals = []
             if user_profile:
@@ -2357,6 +2360,7 @@ class CustomFinancialAgent:
                 'portfolio': portfolio,
                 'transactions': transactions,
                 'credit': credit,
+                'cash_assets': cash_assets,  # Add cash assets to context
                 'goals': goals,
                 'metrics': metrics,
                 'profile': user_profile or {},
@@ -2371,6 +2375,7 @@ class CustomFinancialAgent:
                 'portfolio': {},
                 'transactions': {},
                 'credit': {},
+                'cash_assets': [],
                 'goals': [],
                 'metrics': {},
                 'profile': user_profile or {},
@@ -2473,6 +2478,7 @@ class CustomFinancialAgent:
             salary_transactions = []
             monthly_income = financial_context.get('monthly_income', 0)
             
+            # Check bank transactions
             if 'bank_transactions' in transactions:
                 for transaction in transactions['bank_transactions']:
                     description = transaction.get('description', '').upper()  # Convert to uppercase for exact matching
@@ -2484,9 +2490,10 @@ class CustomFinancialAgent:
                             'amount': amount,
                             'description': transaction.get('description', ''),
                             'date': transaction.get('date', ''),
-                            'type': 'salary_credit'
+                            'type': 'salary_credit',
+                            'source': 'bank_transaction'
                         })
-                        logging.info(f"✅ Detected SALARY CREDIT: ₹{amount:,.0f} on {transaction.get('date', '')}")
+                        logging.info(f"✅ Detected SALARY CREDIT in bank transaction: ₹{amount:,.0f} on {transaction.get('date', '')}")
                     
                     # Secondary detection: Look for other salary-related keywords
                     elif amount > 0:
@@ -2496,9 +2503,40 @@ class CustomFinancialAgent:
                                 'amount': amount,
                                 'description': transaction.get('description', ''),
                                 'date': transaction.get('date', ''),
-                                'type': 'salary_related'
+                                'type': 'salary_related',
+                                'source': 'bank_transaction'
                             })
-                            logging.info(f"✅ Detected salary-related transaction: ₹{amount:,.0f} - {description}")
+                            logging.info(f"✅ Detected salary-related bank transaction: ₹{amount:,.0f} - {description}")
+            
+            # Check cash assets for salary credits
+            if 'cash_assets' in financial_context:
+                for asset in financial_context['cash_assets']:
+                    description = asset.get('description', '').upper()
+                    amount = asset.get('amount', 0)
+                    
+                    # Look for salary credits in cash assets
+                    if "SALARY CREDIT" in description and amount > 0:
+                        salary_transactions.append({
+                            'amount': amount,
+                            'description': asset.get('description', ''),
+                            'date': asset.get('timestamp', ''),
+                            'type': 'salary_credit',
+                            'source': 'cash_asset'
+                        })
+                        logging.info(f"✅ Detected SALARY CREDIT in cash asset: ₹{amount:,.0f} - {description}")
+                    
+                    # Look for other salary-related keywords in cash assets
+                    elif amount > 0:
+                        salary_keywords = ['SALARY', 'PAYROLL', 'WAGES', 'INCOME', 'STIPEND']
+                        if any(keyword in description for keyword in salary_keywords):
+                            salary_transactions.append({
+                                'amount': amount,
+                                'description': asset.get('description', ''),
+                                'date': asset.get('timestamp', ''),
+                                'type': 'salary_related',
+                                'source': 'cash_asset'
+                            })
+                            logging.info(f"✅ Detected salary-related cash asset: ₹{amount:,.0f} - {description}")
             
             if salary_transactions:
                 # Analyze salary patterns

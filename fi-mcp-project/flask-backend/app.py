@@ -264,7 +264,6 @@ def financial_data():
         
         if has_fi_mcp_data:
             logging.info(f"Successfully fetched data from fi-mcp server for phone: {phone}")
-            return jsonify(user_data)
         else:
             logging.warning(f"No data received from fi-mcp server, falling back to mock data for phone: {phone}")
             
@@ -281,8 +280,28 @@ def financial_data():
                         user_data[endpoint] = None
                 except Exception as e:
                     user_data[endpoint] = None
-            
-            return jsonify(user_data)
+        
+        # Add cash assets to net worth
+        cash_assets = get_user_cash_assets(phone)
+        total_cash = sum(a['amount'] for a in cash_assets)
+        
+        # Patch net worth in response
+        try:
+            networth = user_data.get('fetch_net_worth', {}).get('netWorthResponse', {})
+            if networth and 'totalNetWorthValue' in networth:
+                orig = float(networth['totalNetWorthValue']['units'])
+                networth['totalNetWorthValue']['units'] = orig + total_cash
+                # Optionally, add a cash asset entry to assetValues
+                if total_cash > 0:
+                    networth['assetValues'].append({
+                        'netWorthAttribute': 'ASSET_TYPE_CASH',
+                        'value': {'currencyCode': 'INR', 'units': str(total_cash)}
+                    })
+        except Exception:
+            pass
+        
+        user_data['cash_assets'] = cash_assets
+        return jsonify(user_data)
             
     except Exception as e:
         logging.error(f"Error in financial_data endpoint: {e}")
@@ -300,29 +319,27 @@ def financial_data():
             except Exception as e:
                 user_data[endpoint] = None
         
+        # Add cash assets to net worth even in error case
+        cash_assets = get_user_cash_assets(phone)
+        total_cash = sum(a['amount'] for a in cash_assets)
+        
+        # Patch net worth in response
+        try:
+            networth = user_data.get('fetch_net_worth', {}).get('netWorthResponse', {})
+            if networth and 'totalNetWorthValue' in networth:
+                orig = float(networth['totalNetWorthValue']['units'])
+                networth['totalNetWorthValue']['units'] = orig + total_cash
+                # Optionally, add a cash asset entry to assetValues
+                if total_cash > 0:
+                    networth['assetValues'].append({
+                        'netWorthAttribute': 'ASSET_TYPE_CASH',
+                        'value': {'currencyCode': 'INR', 'units': str(total_cash)}
+                    })
+        except Exception:
+            pass
+        
+        user_data['cash_assets'] = cash_assets
         return jsonify(user_data)
-
-    # Add cash assets to net worth
-    cash_assets = get_user_cash_assets(phone)
-    total_cash = sum(a['amount'] for a in cash_assets)
-    
-    # Patch net worth in response
-    try:
-        networth = user_data.get('fetch_net_worth', {}).get('netWorthResponse', {})
-        if networth and 'totalNetWorthValue' in networth:
-            orig = float(networth['totalNetWorthValue']['units'])
-            networth['totalNetWorthValue']['units'] = orig + total_cash
-            # Optionally, add a cash asset entry to assetValues
-            if total_cash > 0:
-                networth['assetValues'].append({
-                    'netWorthAttribute': 'ASSET_TYPE_CASH',
-                    'value': {'currencyCode': 'INR', 'units': str(total_cash)}
-                })
-    except Exception:
-        pass
-    
-    user_data['cash_assets'] = cash_assets
-    return jsonify(user_data)
 
 @app.route('/recommendations', methods=['GET'])
 def recommendations():
@@ -2442,7 +2459,60 @@ def fi_mcp_auth():
         return jsonify({'error': 'Not logged in'}), 401
     
     try:
-        # Generate a session ID for this user
+        # Check if we already have a session ID stored
+        existing_session_id = session.get('fi_mcp_session_id')
+        
+        if existing_session_id:
+            # Test if the existing session is still valid
+            test_response = requests.post(
+                FI_MCP_SERVER_URL,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "fetch_bank_transactions",
+                        "arguments": {}
+                    }
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Mcp-Session-Id": existing_session_id
+                },
+                timeout=10
+            )
+            
+            if test_response.status_code == 200:
+                result = test_response.json()
+                if 'result' in result and 'content' in result['result']:
+                    content = result['result']['content']
+                    
+                    # Check if this is still an authentication required response
+                    if isinstance(content, list) and len(content) > 0:
+                        first_item = content[0]
+                        if isinstance(first_item, dict) and 'text' in first_item:
+                            try:
+                                text_content = json.loads(first_item['text'])
+                                if text_content.get('status') == 'login_required':
+                                    # Still needs authentication, but we have the session ID
+                                    login_url = text_content.get('login_url')
+                                    return jsonify({
+                                        'status': 'auth_required',
+                                        'session_id': existing_session_id,
+                                        'login_url': login_url,
+                                        'message': 'Please authenticate with fi-mcp server using existing session'
+                                    })
+                            except json.JSONDecodeError:
+                                pass
+                    
+                    # If we get here, the session might be valid
+                    return jsonify({
+                        'status': 'authenticated',
+                        'session_id': existing_session_id,
+                        'message': 'Session appears to be valid'
+                    })
+        
+        # Generate a new session ID if we don't have one or the existing one is invalid
         session_id = f"mcp-session-{str(uuid.uuid4())}"
         
         # Store the session ID in the user's session for future requests
@@ -2523,20 +2593,24 @@ def fi_mcp_retry():
     
     session_id = session.get('fi_mcp_session_id')
     if not session_id:
-        return jsonify({'error': 'No session ID found'}), 400
+        return jsonify({'error': 'No session ID found. Please initiate authentication first.'}), 400
     
     try:
         # Try to fetch data with the authenticated session
         user_data = {}
         data_types = ['bank_transactions', 'net_worth', 'credit_report', 'epf_details', 'insurance', 'mf_transactions', 'stock_transactions']
         
+        logging.info(f"Retrying fi-mcp data fetch for phone: {phone}, session: {session_id}")
+        
         for data_type in data_types:
             try:
                 data = fetch_fi_mcp_data_with_session(phone, data_type, session_id)
                 if data:
                     user_data[f'fetch_{data_type}'] = data
+                    logging.info(f"Successfully fetched {data_type}")
                 else:
                     user_data[f'fetch_{data_type}'] = None
+                    logging.warning(f"No data received for {data_type}")
             except Exception as e:
                 logging.error(f"Error fetching {data_type}: {e}")
                 user_data[f'fetch_{data_type}'] = None
@@ -2545,6 +2619,7 @@ def fi_mcp_retry():
         has_real_data = any(data is not None for data in user_data.values())
         
         if has_real_data:
+            logging.info(f"Successfully fetched real data for phone: {phone}")
             # Add cash assets to net worth
             cash_assets = get_user_cash_assets(phone)
             total_cash = sum(a['amount'] for a in cash_assets)
@@ -2571,9 +2646,38 @@ def fi_mcp_retry():
                 'message': 'Successfully fetched real data from fi-mcp server'
             })
         else:
+            logging.warning(f"No real data available after authentication for phone: {phone}")
+            # Let's also test a direct call to see what's happening
+            test_response = requests.post(
+                FI_MCP_SERVER_URL,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "fetch_bank_transactions",
+                        "arguments": {}
+                    }
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Mcp-Session-Id": session_id
+                },
+                timeout=10
+            )
+            
+            logging.info(f"Direct test response status: {test_response.status_code}")
+            logging.info(f"Direct test response: {test_response.text[:200]}")
+            
             return jsonify({
                 'status': 'no_data',
-                'message': 'No real data available after authentication'
+                'message': f'No real data available after authentication. Please ensure you have completed the authentication process in your browser. Session ID: {session_id[:20]}...',
+                'debug_info': {
+                    'session_id': session_id,
+                    'test_response_status': test_response.status_code,
+                    'test_response_preview': test_response.text[:200] if test_response.text else 'No response',
+                    'login_url': f'http://localhost:8484/mockWebPage?sessionId={session_id}'
+                }
             })
         
     except Exception as e:
@@ -2655,6 +2759,67 @@ def fetch_fi_mcp_data_with_session(phone: str, data_type: str, session_id: str) 
     except Exception as e:
         logging.error(f"Unexpected error fetching {data_type}: {e}")
         return None
+
+@app.route('/test-authenticated-fi-mcp', methods=['POST'])
+def test_authenticated_fi_mcp():
+    """
+    Test endpoint to simulate successful authentication (for testing only)
+    """
+    phone = session.get('phone')
+    if not phone:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    try:
+        # Simulate successful authentication by returning mock data
+        # This is for testing purposes only
+        user_data = {}
+        data_types = ['bank_transactions', 'net_worth', 'credit_report', 'epf_details', 'insurance', 'mf_transactions', 'stock_transactions']
+        
+        for data_type in data_types:
+            # Load mock data to simulate authenticated response
+            try:
+                user_dir = os.path.join(TEST_DATA_DIR, phone)
+                file_path = os.path.join(user_dir, f"{data_type}.json")
+                if os.path.exists(file_path):
+                    with open(file_path, 'r') as f:
+                        user_data[f'fetch_{data_type}'] = json.load(f)
+                else:
+                    user_data[f'fetch_{data_type}'] = None
+            except Exception as e:
+                user_data[f'fetch_{data_type}'] = None
+        
+        # Add cash assets
+        cash_assets = get_user_cash_assets(phone)
+        total_cash = sum(a['amount'] for a in cash_assets)
+        
+        # Patch net worth in response
+        try:
+            networth = user_data.get('fetch_net_worth', {}).get('netWorthResponse', {})
+            if networth and 'totalNetWorthValue' in networth:
+                orig = float(networth['totalNetWorthValue']['units'])
+                networth['totalNetWorthValue']['units'] = orig + total_cash
+                if total_cash > 0:
+                    networth['assetValues'].append({
+                        'netWorthAttribute': 'ASSET_TYPE_CASH',
+                        'value': {'currencyCode': 'INR', 'units': str(total_cash)}
+                    })
+        except Exception:
+            pass
+        
+        user_data['cash_assets'] = cash_assets
+        
+        return jsonify({
+            'status': 'success',
+            'data': user_data,
+            'message': 'Simulated authenticated data (for testing only)'
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in test authenticated fi-mcp: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('FLASK_PORT', 5001))) 

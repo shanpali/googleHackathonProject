@@ -233,6 +233,20 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
         setData(response.data.data);
         setFiMcpStatus('Successfully loaded real data!');
         setFiMcpAuthDialog(false);
+      } else if (response.data.status === 'no_data') {
+        const debugInfo = response.data.debug_info;
+        const sessionId = debugInfo?.session_id?.substring(0, 20) + '...';
+        const loginUrl = debugInfo?.login_url;
+        
+        setFiMcpStatus(
+          `Authentication incomplete. Please ensure you have completed the authentication process in your browser. ` +
+          `Session: ${sessionId}`
+        );
+        
+        // Update the login URL in case it changed
+        if (loginUrl) {
+          setFiMcpLoginUrl(loginUrl);
+        }
       } else {
         setFiMcpStatus('No real data available after authentication');
       }
@@ -409,6 +423,16 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
             </Alert>
           )}
         </Box>
+        {fiMcpLoginUrl && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
+              🔗 Authentication URL Available
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Click "Connect to Real Data" to open the authentication dialog and access the login URL.
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Main Dashboard Content */}
@@ -691,8 +715,7 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
             To access your real financial data, you need to authenticate with the fi-mcp server.
           </Typography>
           <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-            Click the link below to open the authentication page in a new tab. After entering your OTP, 
-            return here and click "Retry" to load your real data.
+            <strong>Step 1:</strong> Click the link below to open the authentication page in a new tab.
           </Typography>
           <Box sx={{ mb: 2 }}>
             <Link 
@@ -712,9 +735,15 @@ export default function Dashboard({ phone, setSelectedTab, globalRefreshTrigger 
               🔗 Open Authentication Page
             </Link>
           </Box>
-          <Typography variant="body2" color="text.secondary">
-            After authentication, click "Retry" below to fetch your real financial data.
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            <strong>Step 2:</strong> On the authentication page, enter your OTP or complete the verification process.
           </Typography>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            <strong>Step 3:</strong> After completing authentication, return here and click "Retry with Real Data".
+          </Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <strong>Important:</strong> You must complete the authentication in your browser before clicking "Retry".
+          </Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setFiMcpAuthDialog(false)}>
