@@ -16,11 +16,10 @@ gcloud config set project $PROJECT_ID
 gcloud auth configure-docker $REGION-docker.pkg.dev
 
 # Create a buildx builder if not already created
-docker buildx create --name mybuilder --driver docker-container || true
-docker buildx use mybuilder
+podman build --arch amd64 -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$TAG .
 
 # Build and push the image for linux/amd64
-docker buildx build --platform linux/amd64 -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$TAG --push .
+podman push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$TAG
 
 # Deploy to Cloud Run
 gcloud run deploy $SERVICE_NAME \
