@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "flask-backend/static/react-frontend/build",
     "rewrites": [
       {
         "source": "/api/**",
@@ -8,6 +8,10 @@
           "serviceId": "flask-backend",
           "region": "asia-east1"
         }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   }
